@@ -1,0 +1,1098 @@
+// src/pages/monitoring/Blockchain.jsx
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
+// eslint-disable-next-line no-unused-vars
+import useSocketEvent from '../../hooks/useSocketEvent';
+import {
+  fetchBlockchainData,
+  verifyBlockchain,
+  fetchBlockchainStats,
+  addBlockchainRecord,
+  clearBlockchainData
+} from '../../utils/api';
+import { formatDateTime } from '../../utils/formatters';
+
+const PAGE_SIZES = [5, 10, 20, 50];
+
+const Blockchain = () => {
+  // Add CSS for animations
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 0.3; transform: scale(1.1); }
+        100% { opacity: 0.6; transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  const [blocks, setBlocks] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  
+  // Theme state - get from global theme
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  });
+
+  // Listen for theme changes from global header
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+      setIsDarkMode(currentTheme === 'dark');
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-bs-theme']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(PAGE_SIZES[1]);
+  const [total, setTotal] = useState(0);
+
+  const [expandedId, setExpandedId] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ action: '', data: '' });
+  const [addError, setAddError] = useState('');
+
+  // Theme styles
+  const themeStyles = {
+    background: isDarkMode ? '#1a1a1a' : 'var(--light)',
+    cardBg: isDarkMode ? '#2d2d2d' : 'var(--white)',
+    textColor: isDarkMode ? 'var(--white)' : 'var(--black)',
+    mutedColor: isDarkMode ? 'var(--gray)' : 'var(--gray)',
+    borderColor: isDarkMode ? 'var(--dark-gray)' : 'var(--mid)'
+  };
+
+  // Load stats
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await fetchBlockchainStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Stats loading error:', err);
+      setError('فشل في جلب إحصائيات البلوكتشين');
+    }
+  }, []);
+
+  // Load blocks with current filters & pagination
+  const loadBlocks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const offset = (page - 1) * limit;
+      const params = { limit, offset };
+      const res = await fetchBlockchainData(params);
+      setBlocks(res.blockchain_logs || []);
+      setTotal(res.total || 0);
+    } catch (err) {
+      console.error('Blocks loading error:', err);
+      setError('فشل في جلب سجلات البلوكتشين: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit]);
+
+  // Verify chain
+  const handleVerify = useCallback(async () => {
+    setVerifying(true);
+    setError(null);
+    try {
+      const result = await verifyBlockchain();
+      setVerifyResult(result);
+      await loadStats();
+      await loadBlocks();
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError('فشل في التحقق من السلامة: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setVerifying(false);
+    }
+  }, [loadStats, loadBlocks]);
+
+  // Clear blockchain data
+  const handleClearBlockchain = useCallback(async () => {
+    if (!window.confirm('⚠️ تحذير: هذا الإجراء سيمسح جميع بيانات البلوك تشين نهائياً!\n\nهل أنت متأكد من المتابعة؟')) {
+      return;
+    }
+    
+    if (!window.confirm('هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد تماماً؟')) {
+      return;
+    }
+
+    setClearing(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const result = await clearBlockchainData();
+      setSuccess(result.message || 'تم مسح بيانات البلوك تشين بنجاح');
+      
+      await loadStats();
+      await loadBlocks();
+      
+      setTimeout(() => setSuccess(null), 5000);
+      
+    } catch (err) {
+      console.error('Clear blockchain error:', err);
+      setError('فشل في مسح بيانات البلوك تشين: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setClearing(false);
+    }
+  }, [loadStats, loadBlocks]);
+
+  // Initial load
+  useEffect(() => {
+    loadStats();
+    loadBlocks();
+  }, [loadStats, loadBlocks]);
+
+  // Listen for token refresh events to reload new record
+  useEffect(() => {
+    const onTokenRefreshed = () => {
+      loadStats();
+      loadBlocks();
+    };
+    window.addEventListener('token_refreshed', onTokenRefreshed);
+    return () => {
+      window.removeEventListener('token_refreshed', onTokenRefreshed);
+    };
+  }, [loadStats, loadBlocks]);
+
+  // Listen for blockchain events using the shared socket
+  useSocketEvent('blockchain:new_record', () => {
+    loadBlocks();
+    loadStats();
+  });
+  
+  useSocketEvent('blockchain:updated', () => {
+    loadBlocks();
+    loadStats();
+  });
+
+  const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  const toggleExpand = id => setExpandedId(prev => prev === id ? null : id);
+
+  return (
+    <div className="blockchain-page" style={{ backgroundColor: themeStyles.background, minHeight: '100vh', color: themeStyles.textColor }}>
+      <div className="container-fluid py-4">
+        
+        {/* Hero Header */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card border-0 shadow-lg" style={{ 
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, var(--gray) 0%, var(--text-primary) 100%)' 
+                : 'linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%)', 
+              color: 'white' 
+            }}>
+              <div className="card-body py-4">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                  <div>
+                    <h1 className="h2 mb-2 fw-bold d-flex align-items-center">
+                      <i className="fas fa-cubes me-3" style={{ fontSize: '32px' }}></i>
+                      سجلات البلوك تشين المؤمنة
+                    </h1>
+                    <p className="mb-0 opacity-90" style={{ fontSize: '1.1rem' }}>
+                      <i className="fas fa-shield-alt me-2"></i>
+                      نظام التسجيل الآمن والموثق لجميع العمليات
+                    </p>
+                  </div>
+                  <div className="d-flex gap-2 flex-wrap">
+                    <button
+                      className="btn btn-light btn-lg shadow-sm"
+                      onClick={() => { loadStats(); loadBlocks(); }}
+                      disabled={loading || verifying || clearing}
+                    >
+                      <i className={`fas fa-sync-alt me-2 ${loading ? 'fa-spin' : ''}`}></i>
+                      تحديث البيانات
+                    </button>
+                    <button
+                      className="btn btn-success btn-lg shadow-sm"
+                      onClick={handleVerify}
+                      disabled={verifying || clearing}
+                    >
+                      {verifying ? (
+                        <>
+                          <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                          جاري التحقق...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-shield-alt me-2"></i>
+                          التحقق من السلامة
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="btn btn-warning btn-lg shadow-sm"
+                      onClick={() => setShowAddModal(true)}
+                      disabled={clearing || verifying}
+                    >
+                      <i className="fas fa-plus me-2"></i>
+                      إضافة سجل
+                    </button>
+                    <button
+                      className="btn btn-danger btn-lg shadow-sm"
+                      onClick={handleClearBlockchain}
+                      disabled={clearing || verifying}
+                    >
+                      {clearing ? (
+                        <>
+                          <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                          جاري المسح...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-trash-alt me-2"></i>
+                          مسح البيانات
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Alert Messages */}
+        {error && (
+          <div className="row mb-4">
+            <div className="col-12">
+              <div className="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                {error}
+                <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {success && (
+          <div className="row mb-4">
+            <div className="col-12">
+              <div className="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <i className="fas fa-check-circle me-2"></i>
+                {success}
+                <button type="button" className="btn-close" onClick={() => setSuccess(null)}></button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Results */}
+        {verifyResult && (
+          <div className="row mb-4">
+            <div className="col-12">
+              <div 
+                className="card shadow-lg border-0 position-relative overflow-hidden"
+                style={{
+                  background: isDarkMode 
+                    ? (verifyResult.verified 
+                        ? 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1e3a2a 100%)'
+                        : 'linear-gradient(135deg, #4a1c1c 0%, #5d2a2a 50%, #3a1e1e 100%)')
+                    : (verifyResult.verified 
+                        ? 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 50%, #d1ecf1 100%)'
+                        : 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 50%, #ffeaa7 100%)'),
+                  border: 'none',
+                  borderRadius: '15px',
+                  transition: 'all 0.3s ease',
+                  transform: 'translateY(0)',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+                }}
+              >
+                                 {/* Background Pattern */}
+                 <div 
+                   className="position-absolute top-0 end-0 opacity-10"
+                   style={{
+                     width: '150px',
+                     height: '150px',
+                     background: isDarkMode
+                       ? (verifyResult.verified 
+                           ? 'radial-gradient(circle, var(--success-color) 0%, transparent 70%)'
+                           : 'radial-gradient(circle, var(--danger-color) 0%, transparent 70%)')
+                       : (verifyResult.verified 
+                           ? 'radial-gradient(circle, var(--success-color) 0%, transparent 70%)'
+                           : 'radial-gradient(circle, var(--danger-color) 0%, transparent 70%)'),
+                     borderRadius: '50%',
+                     transform: 'translate(30px, -30px)'
+                   }}
+                 ></div>
+                 
+                 {/* Additional decorative elements */}
+                 <div 
+                   className="position-absolute bottom-0 start-0 opacity-5"
+                   style={{
+                     width: '100px',
+                     height: '100px',
+                     background: isDarkMode
+                       ? (verifyResult.verified 
+                           ? 'radial-gradient(circle, var(--success-color) 0%, transparent 70%)'
+                           : 'radial-gradient(circle, var(--danger-color) 0%, transparent 70%)')
+                       : (verifyResult.verified 
+                           ? 'radial-gradient(circle, var(--success-color) 0%, transparent 70%)'
+                           : 'radial-gradient(circle, var(--danger-color) 0%, transparent 70%)'),
+                     borderRadius: '50%',
+                     transform: 'translate(-20px, 20px)'
+                   }}
+                 ></div>
+                
+                <div className="card-body p-4">
+                  <div className="row align-items-center">
+                    <div className="col-auto">
+                                             <div 
+                         className="rounded-circle d-flex align-items-center justify-content-center position-relative"
+                         style={{
+                           width: '70px',
+                           height: '70px',
+                           background: isDarkMode
+                             ? (verifyResult.verified 
+                                 ? 'linear-gradient(135deg, var(--success-color) 0%, #22c55e 100%)'
+                                 : 'linear-gradient(135deg, var(--danger-color) 0%, #ef4444 100%)')
+                             : (verifyResult.verified 
+                                 ? 'linear-gradient(135deg, var(--success-color) 0%, var(--secondary-color) 100%)'
+                                 : 'linear-gradient(135deg, var(--danger-color) 0%, #fd7e14 100%)'),
+                           boxShadow: isDarkMode
+                             ? '0 4px 20px rgba(0,0,0,0.4)'
+                             : '0 4px 15px rgba(0,0,0,0.2)',
+                           border: `3px solid ${isDarkMode ? 'var(--white)20' : 'var(--white)80'}`
+                         }}
+                       >
+                                                 {verifyResult.verified ? (
+                           <i className="fas fa-shield-check text-white" style={{ fontSize: '28px' }}></i>
+                         ) : (
+                           <i className="fas fa-exclamation-triangle text-white" style={{ fontSize: '28px' }}></i>
+                         )}
+                         
+                         {/* Glow effect */}
+                         <div 
+                           className="position-absolute rounded-circle"
+                           style={{
+                             width: '100%',
+                             height: '100%',
+                             background: isDarkMode
+                               ? (verifyResult.verified 
+                                   ? 'radial-gradient(circle, var(--success-color)40 0%, transparent 70%)'
+                                   : 'radial-gradient(circle, var(--danger-color)40 0%, transparent 70%)')
+                               : (verifyResult.verified 
+                                   ? 'radial-gradient(circle, var(--success-color)40 0%, transparent 70%)'
+                                   : 'radial-gradient(circle, var(--danger-color)40 0%, transparent 70%)'),
+                             animation: 'pulse 2s infinite'
+                           }}
+                         ></div>
+                      </div>
+                    </div>
+                    
+                    <div className="col">
+                      <div className="d-flex flex-column">
+                        <h4 className="mb-2 fw-bold" style={{ 
+                          color: isDarkMode 
+                            ? (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                            : (verifyResult.verified ? '#155724' : '#721c24'),
+                          fontSize: '1.25rem'
+                        }}>
+                          {verifyResult.verified ? (
+                            <>
+                              <i className="fas fa-check-circle me-2"></i>
+                              البلوك تشين سليم ومؤمن
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-exclamation-triangle me-2"></i>
+                              تم اكتشاف مشاكل في البلوك تشين
+                            </>
+                          )}
+                        </h4>
+                        
+                                                 <div className="d-flex align-items-center gap-4 flex-wrap">
+                           <div className="d-flex align-items-center">
+                             <i className="fas fa-cubes me-2" style={{ 
+                               color: isDarkMode 
+                                 ? (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                                 : (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                             }}></i>
+                             <span className="fw-semibold" style={{ 
+                               color: isDarkMode 
+                                 ? (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                                 : (verifyResult.verified ? '#155724' : '#721c24')
+                             }}>
+                               تم فحص {verifyResult.blocks_checked} كتلة
+                             </span>
+                           </div>
+                           
+                           {verifyResult.invalid_blocks > 0 && (
+                             <div className="d-flex align-items-center">
+                               <i className="fas fa-exclamation-circle me-2" style={{ 
+                                 color: isDarkMode ? 'var(--danger-color)' : 'var(--danger-color)'
+                               }}></i>
+                               <span className="fw-semibold" style={{ 
+                                 color: isDarkMode ? 'var(--danger-color)' : 'var(--danger-color)'
+                               }}>
+                                 {verifyResult.invalid_blocks} كتلة معطوبة
+                               </span>
+                             </div>
+                           )}
+                           
+                           {verifyResult.blocks_checked > 0 && (
+                             <div className="d-flex align-items-center">
+                               <i className="fas fa-percentage me-2" style={{ 
+                                 color: isDarkMode 
+                                   ? (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                                   : (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                               }}></i>
+                               <span className="fw-semibold" style={{ 
+                                 color: isDarkMode 
+                                   ? (verifyResult.verified ? 'var(--success-color)' : 'var(--danger-color)')
+                                   : (verifyResult.verified ? '#155724' : '#721c24')
+                               }}>
+                                 {Math.round(((verifyResult.blocks_checked - (verifyResult.invalid_blocks || 0)) / verifyResult.blocks_checked) * 100)}% صالح
+                               </span>
+                             </div>
+                           )}
+                         </div>
+                        
+                                                 {verifyResult.message && (
+                           <p className="mb-0 mt-2 opacity-75" style={{ 
+                             color: isDarkMode 
+                               ? (verifyResult.verified ? '#86efac' : '#fca5a5')
+                               : (verifyResult.verified ? '#155724' : '#721c24')
+                           }}>
+                             <i className="fas fa-info-circle me-1"></i>
+                             {verifyResult.message}
+                           </p>
+                         )}
+                      </div>
+                    </div>
+                    
+                    <div className="col-auto">
+                      <div className="text-end">
+                                                 <div className="badge rounded-pill px-3 py-2 position-relative" style={{
+                           background: isDarkMode
+                             ? (verifyResult.verified 
+                                 ? 'linear-gradient(135deg, var(--success-color) 0%, #22c55e 100%)'
+                                 : 'linear-gradient(135deg, var(--danger-color) 0%, #ef4444 100%)')
+                             : (verifyResult.verified 
+                                 ? 'linear-gradient(135deg, var(--success-color) 0%, var(--secondary-color) 100%)'
+                                 : 'linear-gradient(135deg, var(--danger-color) 0%, #fd7e14 100%)'),
+                           color: 'white',
+                           fontSize: '0.875rem',
+                           fontWeight: '600',
+                           boxShadow: isDarkMode
+                             ? '0 2px 10px rgba(0,0,0,0.3)'
+                             : '0 2px 8px rgba(0,0,0,0.15)',
+                           border: `1px solid ${isDarkMode ? 'var(--white)30' : 'var(--white)60'}`
+                         }}>
+                           <i className={`fas ${verifyResult.verified ? 'fa-shield-check' : 'fa-tools'} me-1`}></i>
+                           {verifyResult.verified ? 'مؤمن' : 'يتطلب إصلاح'}
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Statistics Cards */}
+        {stats && (
+          <div className="row mb-4">
+            <div className="col-lg-3 col-md-6 mb-3">
+              <StatCard
+                title="إجمالي السجلات"
+                value={stats.total_records || 0}
+                icon="fas fa-database"
+                gradient={isDarkMode 
+                  ? "linear-gradient(135deg, var(--gray) 0%, var(--text-primary) 100%)" 
+                  : "linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%)"
+                }
+              />
+            </div>
+            <div className="col-lg-3 col-md-6 mb-3">
+              <StatCard
+                title="أول سجل"
+                value={stats.first_timestamp ? formatDateTime(stats.first_timestamp).split(' ')[0] : '—'}
+                icon="fas fa-calendar-alt"
+                gradient={isDarkMode 
+                  ? "linear-gradient(135deg, #2b6cb0 0%, #1e3a8a 100%)" 
+                  : "linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)"
+                }
+              />
+            </div>
+            <div className="col-lg-3 col-md-6 mb-3">
+              <StatCard
+                title="آخر سجل"
+                value={stats.last_timestamp ? formatDateTime(stats.last_timestamp).split(' ')[0] : '—'}
+                icon="fas fa-calendar-alt"
+                gradient={isDarkMode 
+                  ? "linear-gradient(135deg, #047857 0%, #064e3b 100%)" 
+                  : "linear-gradient(135deg, #81ecec 0%, #00b894 100%)"
+                }
+              />
+            </div>
+            <div className="col-lg-3 col-md-6 mb-3">
+              <StatCard
+                title="أنواع العمليات"
+                value={Object.keys(stats.by_action || {}).length}
+                icon="fas fa-chart-line"
+                gradient={isDarkMode 
+                  ? "linear-gradient(135deg, #b45309 0%, #92400e 100%)" 
+                  : "linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)"
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Blockchain Records */}
+        <div className="row">
+          <div className="col-12">
+            <div className="card shadow-sm border-0" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.borderColor }}>
+              <div className="card-header border-0 py-3" style={{ backgroundColor: themeStyles.cardBg }}>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0 fw-bold d-flex align-items-center" style={{ color: themeStyles.textColor }}>
+                    <i className="fas fa-lock me-2 text-primary"></i>
+                    كتل البلوك تشين المشفرة
+                    {loading && <div className="spinner-border spinner-border-sm ms-2" role="status"></div>}
+                  </h5>
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="badge bg-primary px-3 py-2 fs-6">
+                      إجمالي: {total} سجل
+                    </span>
+                    <select
+                      className="form-select form-select-sm"
+                      style={{ 
+                        width: 'auto',
+                        backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+                        borderColor: themeStyles.borderColor,
+                        color: themeStyles.textColor
+                      }}
+                      value={limit}
+                      onChange={e => { setLimit(+e.target.value); setPage(1); }}
+                    >
+                      {PAGE_SIZES.map(n => (
+                        <option key={n} value={n}>{n} سجل/صفحة</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="card-body p-0" style={{ backgroundColor: themeStyles.cardBg }}>
+                {loading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
+                    <p style={{ color: themeStyles.mutedColor }}>جاري تحميل البيانات المشفرة...</p>
+                  </div>
+                ) : blocks.length === 0 ? (
+                  <div className="text-center py-5">
+                    <i className="fas fa-database mb-3" style={{ fontSize: '48px', color: themeStyles.mutedColor }}></i>
+                    <p className="mb-0" style={{ color: themeStyles.mutedColor }}>لا توجد سجلات متاحة</p>
+                  </div>
+                ) : (
+                  <div>
+                    {blocks.map((block, index) => (
+                      <BlockItem
+                        key={block.id}
+                        block={block}
+                        index={index}
+                        expanded={expandedId === block.id}
+                        onToggle={() => toggleExpand(block.id)}
+                        isDarkMode={isDarkMode}
+                        themeStyles={themeStyles}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="row mt-4">
+            <div className="col-12">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                canPrev={canPrev}
+                canNext={canNext}
+                isDarkMode={isDarkMode}
+                themeStyles={themeStyles}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Add Record Modal */}
+        {showAddModal && (
+          <AddRecordModal
+            show={showAddModal}
+            onHide={() => setShowAddModal(false)}
+            addForm={addForm}
+            setAddForm={setAddForm}
+            addError={addError}
+            setAddError={setAddError}
+            isDarkMode={isDarkMode}
+            themeStyles={themeStyles}
+            onSuccess={() => {
+              loadBlocks();
+              loadStats();
+              setError('');
+            }}
+          />
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+// Enhanced StatCard Component
+const StatCard = ({ title, value, icon, gradient }) => (
+  <div className="card border-0 shadow-sm h-100">
+    <div className="card-body text-center p-4" style={{ background: gradient, color: 'white' }}>
+      <i className={`${icon} mb-3`} style={{ fontSize: '32px' }}></i>
+      <h3 className="fw-bold mb-1">{value}</h3>
+      <p className="mb-0 opacity-90">{title}</p>
+    </div>
+  </div>
+);
+
+// Enhanced BlockItem Component with theme support
+const BlockItem = ({ block, index, expanded, onToggle, isDarkMode, themeStyles }) => (
+  <div className={`border-bottom ${expanded ? (isDarkMode ? 'bg-dark' : 'bg-light') : ''}`} style={{ 
+    backgroundColor: index % 2 === 0 ? themeStyles.cardBg : (isDarkMode ? '#2a2a2a' : 'var(--light)'),
+    borderColor: themeStyles.borderColor 
+  }}>
+    <div className="p-4">
+      <div className="d-flex align-items-center justify-content-between">
+        <div className="flex-grow-1">
+          <div className="d-flex align-items-center mb-3">
+            <div className="me-3">
+              <div className="d-flex align-items-center justify-content-center rounded-circle" 
+                   style={{ 
+                     width: '48px', 
+                     height: '48px', 
+                     background: isDarkMode 
+                       ? 'linear-gradient(135deg, var(--gray) 0%, var(--text-primary) 100%)'
+                       : 'linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%)',
+                     color: 'white',
+                     fontSize: '14px',
+                     fontWeight: 'bold'
+                   }}>
+                #{block.id}
+              </div>
+            </div>
+            <div className="flex-grow-1">
+              <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span className="badge bg-secondary">
+                  <i className="fas fa-calendar-alt me-1"></i>
+                  {block.timestamp?.slice(0,19).replace('T',' ')}
+                </span>
+                {block.user && (
+                  <span className="badge bg-info">
+                    <i className="fas fa-user me-1"></i>
+                    {block.user.username} ({block.user.role || '-'})
+                  </span>
+                )}
+                <span className="badge bg-success">
+                  <i className="fas fa-lock me-1"></i>
+                  مشفر
+                </span>
+              </div>
+              
+              {/* Arabic Description */}
+              {block.arabic_description ? (
+                <div className="mb-2">
+                  <div className="d-flex align-items-start">
+                    <i className="fas fa-info-circle text-success me-2 mt-1"></i>
+                    <div>
+                      <span className="fw-bold" style={{ fontSize: '1.1rem', color: themeStyles.textColor }}>
+                        {block.arabic_description}
+                      </span>
+                      <div className="small mt-1" style={{ color: themeStyles.mutedColor }}>
+                        العملية: {block.action || block.parsed_data?.action || 'غير محددة'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-2">
+                  <i className="fas fa-code text-warning me-2"></i>
+                  <span style={{ color: themeStyles.mutedColor }}>
+                    {block.action || block.parsed_data?.action || 'عملية غير محددة'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="d-flex align-items-center gap-2">
+          <button 
+            className={`btn btn-sm ${expanded ? 'btn-outline-secondary' : 'btn-outline-primary'}`}
+            onClick={onToggle}
+          >
+            {expanded ? (
+              <>
+                <i className="fas fa-eye-slash me-1"></i>
+                إخفاء التفاصيل
+              </>
+            ) : (
+              <>
+                <i className="fas fa-eye me-1"></i>
+                عرض التفاصيل
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="mt-4 pt-4 border-top" style={{ borderColor: themeStyles.borderColor }}>
+          <div className="row">
+            <div className="col-lg-6 mb-4">
+              <div className="card border-0 shadow-sm h-100" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.borderColor }}>
+                <div className="card-header bg-primary text-white py-2">
+                  <h6 className="mb-0 fw-bold">
+                    <i className="fas fa-fingerprint me-2"></i>
+                    معرفات التشفير
+                  </h6>
+                </div>
+                <div className="card-body" style={{ backgroundColor: themeStyles.cardBg }}>
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold" style={{ color: themeStyles.mutedColor }}>معرف الكتلة (Hash)</label>
+                    <div className="font-monospace small p-2 rounded border" style={{ 
+                      backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--light)', 
+                      wordBreak: 'break-all',
+                      borderColor: themeStyles.borderColor,
+                      color: themeStyles.textColor
+                    }}>
+                      {block.hash}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label small fw-bold" style={{ color: themeStyles.mutedColor }}>معرف الكتلة السابقة</label>
+                    <div className="font-monospace small p-2 rounded border" style={{ 
+                      backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--light)', 
+                      wordBreak: 'break-all',
+                      borderColor: themeStyles.borderColor,
+                      color: themeStyles.textColor
+                    }}>
+                      {block.previous_hash || 'لا يوجد (الكتلة الأولى)'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="col-lg-6 mb-4">
+              <div className="card border-0 shadow-sm h-100" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.borderColor }}>
+                <div className="card-header bg-success text-white py-2">
+                  <h6 className="mb-0 fw-bold">
+                    <i className="fas fa-database me-2"></i>
+                    البيانات المفكوكة التشفير
+                  </h6>
+                </div>
+                <div className="card-body" style={{ backgroundColor: themeStyles.cardBg }}>
+                  <div style={{ 
+                    maxHeight: '300px', 
+                    overflowY: 'auto',
+                    backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--light)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${themeStyles.borderColor}`,
+                    color: themeStyles.textColor
+                  }}>
+                    <pre className="mb-0 small" style={{ color: themeStyles.textColor }}>{JSON.stringify(block.parsed_data, null, 2)}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {block.user && (
+            <div className="card border-0 shadow-sm" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.borderColor }}>
+              <div className="card-header bg-info text-white py-2">
+                <h6 className="mb-0 fw-bold">
+                  <i className="fas fa-user me-2"></i>
+                  معلومات المستخدم
+                </h6>
+              </div>
+              <div className="card-body" style={{ backgroundColor: themeStyles.cardBg }}>
+                <div className="row">
+                  <div className="col-md-4">
+                    <strong style={{ color: themeStyles.textColor }}>اسم المستخدم:</strong> 
+                    <span style={{ color: themeStyles.textColor }}> {block.user.username}</span>
+                  </div>
+                  <div className="col-md-4">
+                    <strong style={{ color: themeStyles.textColor }}>المعرف:</strong> 
+                    <span style={{ color: themeStyles.textColor }}> {block.user.id}</span>
+                  </div>
+                  <div className="col-md-4">
+                    <strong style={{ color: themeStyles.textColor }}>الدور:</strong> 
+                    <span style={{ color: themeStyles.textColor }}> {block.user.role || 'غير محدد'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Add Record Modal Component with theme support
+const AddRecordModal = ({ show, onHide, addForm, setAddForm, addError, setAddError, isDarkMode, themeStyles, onSuccess }) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setAddError('');
+    try {
+      let parsedData;
+      try {
+        parsedData = JSON.parse(addForm.data);
+      } catch {
+        setAddError('صيغة JSON غير صحيحة في حقل البيانات');
+        return;
+      }
+      const payload = { action: addForm.action, data: parsedData };
+      await addBlockchainRecord(payload);
+      onHide();
+      setAddForm({ action: '', data: '' });
+      onSuccess();
+    } catch (err) {
+      console.error('Add record error:', err);
+      setAddError('فشل إضافة السجل: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-lg">
+        <div className="modal-content shadow-lg border-0" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.borderColor }}>
+          <div className="modal-header bg-primary text-white">
+            <h5 className="modal-title fw-bold">
+              <i className="fas fa-plus me-2"></i>
+              إضافة سجل جديد للبلوك تشين
+            </h5>
+            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body p-4" style={{ backgroundColor: themeStyles.cardBg }}>
+              {addError && (
+                <div className="alert alert-danger">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  {addError}
+                </div>
+              )}
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold" style={{ color: themeStyles.textColor }}>نوع العملية</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-lg"
+                    style={{ 
+                      backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+                      borderColor: themeStyles.borderColor,
+                      color: themeStyles.textColor
+                    }}
+                    placeholder="مثال: user_login"
+                    value={addForm.action}
+                    onChange={e => setAddForm(f => ({ ...f, action: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold" style={{ color: themeStyles.textColor }}>البيانات (JSON)</label>
+                  <textarea
+                    className="form-control"
+                    style={{ 
+                      backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+                      borderColor: themeStyles.borderColor,
+                      color: themeStyles.textColor,
+                      fontFamily: 'monospace'
+                    }}
+                    rows="8"
+                    placeholder='{"user_id": "123", "details": "تفاصيل العملية"}'
+                    value={addForm.data}
+                    onChange={e => setAddForm(f => ({ ...f, data: e.target.value }))}
+                    required
+                  />
+                  <div className="form-text" style={{ color: themeStyles.mutedColor }}>يجب أن تكون البيانات بصيغة JSON صحيحة</div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ backgroundColor: isDarkMode ? '#2a2a2a' : 'var(--light)' }}>
+              <button type="button" className="btn btn-outline-secondary" onClick={onHide}>
+                إلغاء
+              </button>
+              <button type="submit" className="btn btn-primary">
+                <i className="fas fa-plus me-2"></i>
+                إضافة السجل
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+AddRecordModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
+  addForm: PropTypes.object.isRequired,
+  setAddForm: PropTypes.func.isRequired,
+  addError: PropTypes.string,
+  setAddError: PropTypes.func.isRequired,
+  isDarkMode: PropTypes.bool.isRequired,
+  themeStyles: PropTypes.object.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+};
+
+// Enhanced Pagination Component with theme support
+const Pagination = ({ page, totalPages, onPageChange, canPrev, canNext, isDarkMode, themeStyles }) => (
+  <nav>
+    <ul className="pagination justify-content-center shadow-sm">
+      <li className={`page-item ${!canPrev && 'disabled'}`}>
+        <button 
+          className="page-link" 
+          style={{ 
+            backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+            borderColor: themeStyles.borderColor,
+            color: themeStyles.textColor
+          }}
+          onClick={() => onPageChange(1)} 
+          disabled={!canPrev}
+        >
+          الأولى
+        </button>
+      </li>
+      <li className={`page-item ${!canPrev && 'disabled'}`}>
+        <button 
+          className="page-link" 
+          style={{ 
+            backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+            borderColor: themeStyles.borderColor,
+            color: themeStyles.textColor
+          }}
+          onClick={() => onPageChange(page - 1)} 
+          disabled={!canPrev}
+        >
+          السابقة
+        </button>
+      </li>
+      
+      {/* Page numbers */}
+      {[...Array(Math.min(5, totalPages))].map((_, i) => {
+        const pageNum = Math.max(1, Math.min(totalPages, page - 2 + i));
+        return (
+          <li key={i} className={`page-item ${page === pageNum && 'active'}`}>
+            <button 
+              className="page-link" 
+              style={{ 
+                backgroundColor: page === pageNum ? 'var(--primary-color)' : (isDarkMode ? 'var(--dark-gray)' : 'var(--white)'),
+                borderColor: themeStyles.borderColor,
+                color: page === pageNum ? 'white' : themeStyles.textColor
+              }}
+              onClick={() => onPageChange(pageNum)}
+            >
+              {pageNum}
+            </button>
+          </li>
+        );
+      })}
+      
+      <li className={`page-item ${!canNext && 'disabled'}`}>
+        <button 
+          className="page-link" 
+          style={{ 
+            backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+            borderColor: themeStyles.borderColor,
+            color: themeStyles.textColor
+          }}
+          onClick={() => onPageChange(page + 1)} 
+          disabled={!canNext}
+        >
+          التالية
+        </button>
+      </li>
+      <li className={`page-item ${!canNext && 'disabled'}`}>
+        <button 
+          className="page-link" 
+          style={{ 
+            backgroundColor: isDarkMode ? 'var(--dark-gray)' : 'var(--white)',
+            borderColor: themeStyles.borderColor,
+            color: themeStyles.textColor
+          }}
+          onClick={() => onPageChange(totalPages)} 
+          disabled={!canNext}
+        >
+          الأخيرة
+        </button>
+      </li>
+    </ul>
+  </nav>
+);
+
+// PropTypes
+StatCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  icon: PropTypes.string.isRequired,
+  gradient: PropTypes.string.isRequired
+};
+
+BlockItem.propTypes = {
+  block: PropTypes.object.isRequired,
+  index: PropTypes.number.isRequired,
+  expanded: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func.isRequired,
+  isDarkMode: PropTypes.bool.isRequired,
+  themeStyles: PropTypes.object.isRequired
+};
+
+Pagination.propTypes = {
+  page: PropTypes.number.isRequired,
+  totalPages: PropTypes.number.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  canPrev: PropTypes.bool.isRequired,
+  canNext: PropTypes.bool.isRequired,
+  isDarkMode: PropTypes.bool.isRequired,
+  themeStyles: PropTypes.object.isRequired
+};
+
+export default Blockchain;
+

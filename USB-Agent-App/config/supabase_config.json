@@ -1,0 +1,13 @@
+{
+  "supabase_url": "https://fnsrzgbuusmyesdeedky.supabase.co",
+  "supabase_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuc3J6Z2J1dXNteWVzZGVlZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNjQyOTYsImV4cCI6MjA3MTk0MDI5Nn0.IggzpWm40DQzA1Uirwb7SqZ8BMOT3RgiqmV1oXXkspY",
+  "supabase_service_role_key": "sbp_628f740f9fcf1bd187a0fc8a813a9a5b568a46d7",
+  "table_name": "agents",
+  "enabled": true,
+  "auto_sync": true,
+  "sync_interval": 300,
+  "batch_upload": true,
+  "max_batch_size": 100,
+  "retry_attempts": 3,
+  "retry_delay": 5000
+}

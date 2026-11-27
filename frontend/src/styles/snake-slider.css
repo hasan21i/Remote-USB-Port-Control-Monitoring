@@ -1,0 +1,221 @@
+/* Snake Slider Animation - Similar to Snake Game */
+
+.snake-slider-container {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.snake-images-track {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.snake-image-item {
+  position: relative;
+  perspective: 1000px;
+}
+
+.snake-image-item img {
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* التأثيرات المتقدمة للصور */
+.snake-image-item img:hover {
+  transform: scale(1.3) rotateY(0deg) rotateX(5deg) !important;
+  filter: brightness(1.3) contrast(1.2) !important;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.4), 
+    0 0 40px rgba(30, 64, 175, 0.6) !important;
+  z-index: 100 !important;
+}
+
+/* تأثيرات الخلفية المتحركة */
+.snake-slider-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  animation: backgroundFloat 10s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes backgroundFloat {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+/* تحسين المؤشرات */
+.progress-indicators div:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 20px rgba(30, 64, 175, 0.8);
+}
+
+/* تحسين صناديق المعلومات */
+.current-feature-info,
+.current-benefit-info {
+  animation: infoSlideUp 0.8s ease-out;
+}
+
+@keyframes infoSlideUp {
+  0% {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* تأثيرات للشاشات الصغيرة */
+@media (max-width: 768px) {
+  .snake-slider-container {
+    height: 350px !important;
+    padding: 15px !important;
+  }
+  
+  .snake-images-track {
+    height: 200px !important;
+  }
+  
+  .snake-image-item {
+    height: 180px !important;
+    padding: 0 10px !important;
+  }
+  
+  .snake-image-item img {
+    max-width: 140px !important;
+    max-height: 140px !important;
+  }
+  
+  .current-feature-info,
+  .current-benefit-info {
+    padding: 12px 20px !important;
+    font-size: 12px !important;
+  }
+  
+  .current-feature-info h4,
+  .current-benefit-info h5 {
+    font-size: 14px !important;
+  }
+  
+  .current-feature-info p,
+  .current-benefit-info p {
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .snake-slider-container {
+    height: 300px !important;
+    padding: 10px !important;
+  }
+  
+  .snake-images-track {
+    height: 160px !important;
+  }
+  
+  .snake-image-item {
+    height: 140px !important;
+    padding: 0 8px !important;
+  }
+  
+  .snake-image-item img {
+    max-width: 100px !important;
+    max-height: 100px !important;
+  }
+  
+  .current-feature-info,
+  .current-benefit-info {
+    padding: 8px 15px !important;
+    bottom: 10px !important;
+  }
+  
+  .progress-indicators {
+    top: 10px !important;
+    right: 10px !important;
+  }
+  
+  .progress-indicators div {
+    width: 8px !important;
+    height: 8px !important;
+  }
+}
+
+/* تأثيرات إضافية للتفاعل */
+.snake-slider-container:hover .snake-images-track {
+  animation-play-state: paused;
+}
+
+/* تأثير التوهج للصورة النشطة */
+@keyframes activeGlow {
+  0%, 100% {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2), 0 0 25px rgba(30, 64, 175, 0.4);
+  }
+  50% {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 35px rgba(30, 64, 175, 0.6);
+  }
+}
+
+.snake-image-item img[style*="scale(1.2)"],
+.snake-image-item img[style*="scale(1.15)"] {
+  animation: activeGlow 2s ease-in-out infinite;
+}
+
+/* تحسين الانتقالات */
+.snake-images-track {
+  transition: transform 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* إضافة تأثير الحدود المتحركة */
+.snake-slider-container {
+  position: relative;
+}
+
+.snake-slider-container::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    transparent, 
+    rgba(30, 64, 175, 0.3), 
+    transparent, 
+    rgba(16, 185, 129, 0.3),
+    transparent
+  );
+  background-size: 400% 400%;
+  animation: borderMove 8s ease-in-out infinite;
+  border-radius: 22px;
+  z-index: -1;
+}
+
+@keyframes borderMove {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+} 

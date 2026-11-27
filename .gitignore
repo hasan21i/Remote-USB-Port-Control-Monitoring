@@ -1,0 +1,55 @@
+# Node.js dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+.npm
+.eslintcache
+*.tgz
+
+# Python cache & venv
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# Build artifacts & temp
+build/
+*/build/
+*/*/build/
+dist/
+*/dist/
+*/*/dist/
+Release/
+*/Release/
+*/*/Release/
+.cache/
+*/.cache/
+*/*/.cache/
+**/.cache/
+*.tmp
+*.temp
+*.pack
+*.asar
+*.dill
+*.apk
+*.exe
+
+# Flutter & Dart builds
+.dart_tool/
+remot/.dart_tool/
+remot/build/
+remot/android/build/
+remot/ios/build/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db

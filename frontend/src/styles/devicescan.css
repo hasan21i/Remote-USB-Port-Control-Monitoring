@@ -1,0 +1,297 @@
+/* صفحة مسح الأجهزة */
+
+.device-scan-page {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%);
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.device-scan-page .container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.device-scan-page .card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.device-scan-page .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.device-scan-page .btn {
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.device-scan-page .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.device-scan-page .progress {
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.device-scan-page .progress-bar {
+  border-radius: 15px;
+}
+
+.device-scan-page .table {
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.device-scan-page .table th {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.device-scan-page .badge {
+  border-radius: 20px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+.device-scan-page .alert {
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.device-scan-page .alert-info {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%);
+  color: white;
+}
+
+.device-scan-page .alert-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+  color: white;
+}
+
+.device-scan-page .alert-danger {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: white;
+}
+
+.device-scan-page .alert-warning {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+  color: #333;
+}
+
+/* تحسينات للأجهزة الصغيرة */
+@media (max-width: 768px) {
+  .device-scan-page .container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+  
+  .device-scan-page .btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .device-scan-page .card-body {
+    padding: 1rem;
+  }
+  
+  .device-scan-page .table-responsive {
+    font-size: 0.9rem;
+  }
+}
+
+/* تحسينات للأجهزة المتوسطة */
+@media (max-width: 992px) {
+  .device-scan-page .row {
+    margin: 0;
+  }
+  
+  .device-scan-page .col-md-6,
+  .device-scan-page .col-lg-4 {
+    margin-bottom: 1rem;
+  }
+}
+
+/* تأثيرات حركية */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.device-scan-page .card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.device-scan-page .alert {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* تحسين أزرار الإجراءات */
+.device-scan-page .btn-group .btn {
+  margin: 0 2px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.device-scan-page .btn-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+  border: none;
+}
+
+.device-scan-page .btn-danger {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  border: none;
+}
+
+.device-scan-page .btn-outline-danger {
+  border: 2px solid #ff416c;
+  color: #ff416c;
+  background: transparent;
+}
+
+.device-scan-page .btn-outline-danger:hover {
+  background: #ff416c;
+  color: white;
+}
+
+/* تحسين الجداول */
+.device-scan-page .table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.device-scan-page .table tbody tr:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: scale(1.01);
+}
+
+/* تحسين البطاقات */
+.device-scan-page .card-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%);
+  color: white;
+  border: none;
+  border-radius: 15px 15px 0 0;
+}
+
+.device-scan-page .card-footer {
+  background: rgba(102, 126, 234, 0.05);
+  border: none;
+  border-radius: 0 0 15px 15px;
+}
+
+/* تحسين النصوص */
+.device-scan-page h2 {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.device-scan-page .text-muted {
+  color: var(--gray) !important;
+}
+
+/* تحسين الأيقونات */
+.device-scan-page .fas {
+  margin-right: 0.5rem;
+}
+
+.device-scan-page .fa-search {
+  color: var(--primary-color);
+}
+
+.device-scan-page .fa-sync-alt {
+  color: var(--primary-color);
+}
+
+.device-scan-page .fa-check {
+  color: #56ab2f;
+}
+
+.device-scan-page .fa-times {
+  color: #ff416c;
+}
+
+.device-scan-page .fa-eject {
+  color: #ff416c;
+}
+
+/* تحسين الشريط التقدمي */
+.device-scan-page .progress-bar-striped {
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+  background-size: 1rem 1rem;
+}
+
+/* تحسين الرسائل */
+.device-scan-page .alert-info h6 {
+  color: white;
+  font-weight: 600;
+}
+
+.device-scan-page .alert-info p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+/* تحسين الألوان */
+.device-scan-page .bg-info {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-gray) 100%) !important;
+}
+
+.device-scan-page .bg-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%) !important;
+}
+
+.device-scan-page .bg-warning {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important;
+}
+
+.device-scan-page .bg-danger {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important;
+}
+
+/* تحسين الكود */
+.device-scan-page code {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* تحسين القوائم */
+.device-scan-page ul {
+  padding-left: 1.5rem;
+}
+
+.device-scan-page ul li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+/* تحسين الروابط */
+.device-scan-page a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.device-scan-page a:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+} 

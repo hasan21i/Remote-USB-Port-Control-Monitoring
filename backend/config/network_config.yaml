@@ -1,0 +1,64 @@
+# إعدادات الشبكة والاتصال بين السيرفرات
+network:
+  # إعدادات السيرفر المركزي
+  primary_server:
+    host: "192.168.1.100"
+    port: 5000
+    protocol: "http"
+    api_key: "PRIMARY_SERVER_API_KEY_2024"
+    
+  # إعدادات السيرفر الاحتياطي
+  secondary_server:
+    host: "192.168.1.101"
+    port: 5000
+    protocol: "http"
+    api_key: "SECONDARY_SERVER_API_KEY_2024"
+    
+  # إعدادات الوكيل
+  agent:
+    host: "192.168.1.102"
+    port: 5000
+    protocol: "http"
+    api_key: "AGENT_API_KEY_2024"
+
+# إعدادات الاتصال
+connection:
+  timeout: 10
+  retry_attempts: 3
+  retry_delay: 5
+  keep_alive: true
+  connection_pool: 10
+  ssl_verify: false  # للاختبار المحلي
+
+# إعدادات المزامنة
+sync:
+  enabled: true
+  interval: 300  # كل 5 دقائق
+  batch_size: 100
+  retry_on_failure: true
+  offline_mode: true
+  data_compression: true
+  
+# إعدادات الأمان
+security:
+  encrypt_data: true
+  compression: true
+  validate_certificates: false  # للاختبار المحلي
+  api_key_rotation: true
+  session_timeout: 3600
+
+# إعدادات التخزين المؤقت
+cache:
+  enabled: true
+  max_size: 1000
+  ttl: 3600
+  offline_storage: true
+  sync_on_reconnect: true
+
+# إعدادات التقارير
+reporting:
+  auto_generate: true
+  send_reports: true
+  report_interval: 3600
+  real_time_alerts: true
+  email_notifications: true 

@@ -1,0 +1,41 @@
+# إعدادات الخادم المركزي لنظام مراقبة USB - الإعدادات الحقيقية
+server_id: "srv-001"
+central_server_url: "http://192.168.1.100:5000"  # عنوان السيرفر المركزي
+backup_server_url: "http://192.168.1.101:5000"   # عنوان السيرفر الاحتياطي
+api_key: "CENTRAL_SERVER_API_KEY_2024"
+heartbeat_interval: 30           # بالثواني
+heartbeat_timeout: 90            # بالثواني
+connection_timeout: 10           # بالثواني
+retry_interval: 5                # بالثواني
+max_retries: 3
+log_level: "INFO"
+log_file_path: "/var/log/usbmonitor/server.log"
+database_path: "/var/lib/usbmonitor/usbcontrol.db"
+backup_path: "/var/backups/usbmonitor/"
+uploads_path: "/var/lib/usbmonitor/uploads/"
+ssl_cert_path: "/etc/ssl/certs/server.crt"
+ssl_key_path: "/etc/ssl/private/server.key"
+ca_cert_path: "/etc/ssl/certs/ca.crt"
+allowed_client_certs:
+  - "/etc/ssl/certs/client1.crt"
+  - "/etc/ssl/certs/client2.crt"
+encryption_algorithm: "AES-256"
+encryption_key_path: "/etc/usbmonitor/encryption.key"
+key_rotation_days: 90
+power_threshold: 2.5              # بالواط
+voltage_threshold: 4.75           # بالفولت
+response_mode: "auto_block"      # auto_block | alert_only | escalate
+escalation_contacts:
+  - "admin@example.com"
+  - "+123456789"
+db_type: "sqlite"
+db_host: "localhost"
+db_port: 5432
+# إذا استخدمت PostgreSQL أو MySQL
+# db_user: "usbmonitor"
+# db_password: "REPLACE_WITH_STRONG_PASSWORD"
+db_name: "usbcontrol"
+monitoring:
+  enable_power_monitoring: true
+  enable_transfer_monitoring: true
+  enable_device_detection: true 

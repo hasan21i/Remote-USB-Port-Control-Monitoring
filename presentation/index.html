@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحكم ومراقبة منافذ USB عن بُعد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #1a1a2e 100%);
+            min-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .presentation {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow: visible;
+            transform-style: preserve-3d;
+        }
+
+        .slide {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: none;
+            background: linear-gradient(145deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            margin: 20px;
+            box-shadow:
+                0 25px 50px rgba(0,0,0,0.5),
+                0 0 0 1px rgba(255,255,255,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            transform: translateX(100%) rotateY(15deg) scale(0.9);
+            transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-origin: center center;
+            border: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 120px; /* Space for navigation */
+        }
+
+        .slide.active {
+            display: block;
+            transform: translateX(0) rotateY(0deg) scale(1);
+            z-index: 10;
+        }
+
+        .slide.prev {
+            transform: translateX(-120%) rotateY(-25deg) scale(0.8);
+            z-index: 5;
+        }
+
+        .slide.next {
+            transform: translateX(120%) rotateY(25deg) scale(0.8);
+            z-index: 5;
+        }
+
+        .slide-content {
+            padding: 40px;
+            min-height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* New layout for slides with images */
+        .slide-content.split-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 60px;
+            min-height: calc(100vh - 140px);
+            gap: 40px;
+        }
+
+        .slide-text-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .slide-image-section {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            padding: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .slide-image-section .slide-image {
+            opacity: 1;
+            transform: translateX(0) scale(1) rotate(0deg);
+            transition: all 0.3s ease;
+        }
+
+        @keyframes imageSlideIn {
+            0% {
+                opacity: 0.8;
+                transform: translateX(0) scale(0.95) rotate(0deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1) rotate(0deg);
+            }
+        }
+
+        .slide-title {
+            font-size: 4em;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #ffeaa7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            animation: titleGlow 4s ease-in-out infinite alternate;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+            transform: perspective(1000px) rotateX(0deg);
+            transition: transform 0.5s ease;
+        }
+
+        .slide-title:hover {
+            transform: perspective(1000px) rotateX(-5deg);
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: drop-shadow(0 0 20px rgba(255, 107, 107, 0.5))
+                       drop-shadow(0 0 40px rgba(78, 205, 196, 0.3))
+                       drop-shadow(0 0 60px rgba(69, 183, 209, 0.2));
+                transform: scale(1);
+            }
+            to {
+                filter: drop-shadow(0 0 30px rgba(255, 107, 107, 0.8))
+                       drop-shadow(0 0 50px rgba(78, 205, 196, 0.5))
+                       drop-shadow(0 0 80px rgba(69, 183, 209, 0.4));
+                transform: scale(1.02);
+            }
+        }
+
+        .slide-subtitle {
+            font-size: 2.5em;
+            color: #ffffff;
+            margin-bottom: 40px;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #ff9ff3, #f368e0, #a8e6cf, #ffd3a5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: subtitlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes subtitlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .slide-text {
+            font-size: 1.5em;
+            color: #e8f4f8;
+            line-height: 2;
+            max-width: 1000px;
+            margin-bottom: 30px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-weight: 500;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+            margin: 30px auto;
+            text-align: center;
+        }
+
+        .feature-item {
+            background: linear-gradient(145deg, rgba(255, 107, 107, 0.15) 0%, rgba(78, 205, 196, 0.15) 50%, rgba(69, 183, 209, 0.15) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transform: perspective(1000px) rotateX(0deg);
+            box-shadow:
+                0 8px 25px rgba(255, 107, 107, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.8), rgba(78, 205, 196, 0.8), rgba(69, 183, 209, 0.8));
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: -1;
+            border-radius: 17px;
+        }
+
+        .feature-item:hover {
+            transform: perspective(1000px) rotateX(-5deg) translateY(-15px) scale(1.05);
+            box-shadow:
+                0 25px 50px rgba(255, 107, 107, 0.4),
+                0 0 0 2px rgba(255, 107, 107, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-item:hover::before {
+            opacity: 0.2;
+        }
+
+        .feature-title {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-desc {
+            font-size: 1.1em;
+            color: #e8f4f8;
+            line-height: 1.6;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-weight: 500;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: linear-gradient(45deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.8em;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow:
+                0 15px 35px rgba(255, 107, 107, 0.4),
+                0 0 0 3px rgba(255, 255, 255, 0.1),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transform: perspective(1000px) rotateX(0deg);
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: perspective(1000px) rotateX(-10deg) scale(1.1);
+            box-shadow:
+                0 20px 45px rgba(255, 107, 107, 0.6),
+                0 0 0 4px rgba(255, 107, 107, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-btn:hover::before {
+            opacity: 1;
+        }
+
+        .nav-btn:active {
+            transform: perspective(1000px) rotateX(-5deg) scale(1.05);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 700;
+            color: #2c3e50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .particle:nth-child(2n) {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1, #ff6b6b);
+            animation-delay: -2s;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.6);
+        }
+
+        .particle:nth-child(3n) {
+            background: linear-gradient(45deg, #45b7d1, #ff6b6b, #4ecdc4);
+            animation-delay: -4s;
+            box-shadow: 0 0 20px rgba(69, 183, 209, 0.6);
+        }
+
+        .particle:nth-child(4n) {
+            background: linear-gradient(45deg, #ff9ff3, #f368e0, #a8e6cf);
+            animation-delay: -6s;
+            box-shadow: 0 0 20px rgba(255, 159, 243, 0.6);
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg) scale(1);
+                opacity: 0.3;
+            }
+            25% {
+                transform: translateY(-150px) rotate(90deg) scale(1.2);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(-300px) rotate(180deg) scale(0.8);
+                opacity: 1;
+            }
+            75% {
+                transform: translateY(-150px) rotate(270deg) scale(1.1);
+                opacity: 0.6;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in-left {
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .scale-in {
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .slide-image {
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,107,107,0.2), rgba(78,205,196,0.2), rgba(69,183,209,0.2));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+        }
+
+        .slide-image:hover {
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 25px 60px rgba(255,107,107,0.5);
+        }
+
+        .slide-image:hover::before {
+            opacity: 1;
+        }
+
+        .slide-image:active {
+            transform: scale(0.95) rotate(-1deg);
+        }
+
+        .remote-control {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .remote-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(255,107,107,0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .remote-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(255,107,107,0.6);
+        }
+
+        .remote-btn:active {
+            transform: scale(0.95);
+        }
+
+        .wireless-presenter-status {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9));
+            padding: 15px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            box-shadow: 0 10px 30px rgba(255,107,107,0.4);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wireless-presenter-status.connected {
+            display: flex;
+        }
+
+        .wireless-presenter-status .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .wireless-presenter-settings {
+            position: fixed;
+            top: 160px;
+            right: 30px;
+            background: linear-gradient(145deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            min-width: 250px;
+            border: 2px solid rgba(255,107,107,0.3);
+        }
+
+        .wireless-presenter-settings.show {
+            display: block;
+        }
+
+        .wireless-presenter-settings h4 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #e8f4f8;
+            font-size: 0.9em;
+        }
+
+        .setting-toggle {
+            width: 50px;
+            height: 25px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .setting-toggle.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        }
+
+        .setting-toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .setting-toggle.active::after {
+            left: 28px;
+        }
+
+        .presentation-mode {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            background: linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9));
+            padding: 20px 15px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1em;
+            box-shadow: 0 10px 30px rgba(255,107,107,0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .presentation-mode:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 15px 40px rgba(255,107,107,0.6);
+        }
+
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .fullscreen-overlay.active {
+            display: flex;
+        }
+
+        .fullscreen-content {
+            background: linear-gradient(145deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,107,107,0.3);
+        }
+
+        .image-transition {
+            animation: imageTransitionFixed 0.5s ease-out;
+        }
+
+        @keyframes imageTransitionFixed {
+            from {
+                opacity: 0.8;
+                transform: translateX(0) scale(0.95) rotate(0deg);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1) rotate(0deg);
+            }
+        }
+
+        .image-bounce {
+            animation: imageBounceFixed 0.5s ease-out;
+        }
+
+        @keyframes imageBounceFixed {
+            0% { transform: scale(0.95) rotate(0deg); opacity: 0.8; }
+            50% { transform: scale(1.02) rotate(0deg); opacity: 0.9; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .image-rotate {
+            animation: imageRotateFixed 0.5s ease-out;
+        }
+
+        @keyframes imageRotateFixed {
+            from { transform: rotate(0deg) scale(0.95); opacity: 0.8; }
+            to { transform: rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .slide-content {
+                padding: 30px;
+            }
+
+            .slide-title {
+                font-size: 2.5em;
+            }
+
+            .slide-subtitle {
+                font-size: 1.8em;
+            }
+
+            .slide-text {
+                font-size: 1.2em;
+            }
+
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="slide-counter" id="slideCounter">1 / 12</div>
+
+    <div class="presentation-mode" id="presentationModeBtn">
+        ▶️ وضع العرض
+    </div>
+
+    <div class="remote-control">
+        <button class="remote-btn" id="fullscreenBtn" title="شاشة كاملة">⛶</button>
+        <button class="remote-btn" id="wirelessSettingsBtn" title="إعدادات الريموت اللاسلكي">📡</button>
+    </div>
+
+    <div class="wireless-presenter-status" id="wirelessStatus">
+        <div class="status-dot"></div>
+        <span>ريموت لاسلكي متصل</span>
+    </div>
+
+    <div class="wireless-presenter-settings" id="wirelessSettings">
+        <h4>إعدادات الريموت اللاسلكي</h4>
+        <div class="setting-item">
+            <span>تفعيل Gamepad</span>
+            <div class="setting-toggle active" id="gamepadToggle"></div>
+        </div>
+        <div class="setting-item">
+            <span>تفعيل WebHID</span>
+            <div class="setting-toggle" id="webhidToggle"></div>
+        </div>
+        <div class="setting-item">
+            <span>التنقل التلقائي</span>
+            <div class="setting-toggle active" id="autoNavToggle"></div>
+        </div>
+        <div class="setting-item">
+            <span>مؤشرات صوتية</span>
+            <div class="setting-toggle" id="soundToggle"></div>
+        </div>
+        <button class="remote-btn" id="connectWirelessBtn" style="width: 100%; height: 40px; font-size: 1em; margin-top: 15px;">اتصال يدوي</button>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" disabled>‹</button>
+        <button class="nav-btn" id="nextBtn">›</button>
+    </div>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide active" id="slide1">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h1 class="slide-title">Remote USB Port Control & Monitoring</h1>
+                    <p class="slide-text">
+                        حل متقدم على مستوى المؤسسات لأمان وإدارة USB
+                    </p>
+                </div>
+                <div class="slide-image-section">
+                    <img src="usb_monitor_logo.png" alt="USB Monitor Logo" class="slide-image image-bounce" style="width: 120px; height: 120px; border-radius: 20px; box-shadow: 0 10px 30px rgba(255,107,107,0.3);">
+                    <img src="alpha-team-logo.png" alt="Alpha Team Logo" class="slide-image image-rotate" style="width: 120px; height: 120px; border-radius: 20px; box-shadow: 0 10px 30px rgba(78,205,196,0.3);">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Innovation -->
+        <div class="slide" id="slide2">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">الجدة والابتكار</h2>
+                    <p class="slide-text fade-in">
+                        يتضمن هذا التطوير السماح للمسؤولين بمراقبة والتحكم وتكوين منافذ USB عن بُعد على عدة أجهزة عبر الشبكة. يمكن أن تساعد هذه الميزة في المؤسسات الكبيرة أو الشركات أو الأنظمة الموزعة حيث يحتاج المسؤولون لإدارة أمان منافذ USB لعدة أجهزة في الوقت الفعلي دون الحاجة للوصول الفيزيائي لكل جهاز.
+                    </p>
+                </div>
+                <div class="slide-image-section">
+                    <img src="benefit-realtime.png" alt="Real-time Monitoring" class="slide-image image-bounce" style="width: 150px; height: 150px; border-radius: 20px; box-shadow: 0 15px 40px rgba(255,107,107,0.4);">
+                    <img src="benefit-management.png" alt="Management Benefits" class="slide-image image-transition" style="width: 150px; height: 150px; border-radius: 20px; box-shadow: 0 15px 40px rgba(78,205,196,0.4);">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: How it works -->
+        <div class="slide" id="slide3">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">كيفية العمل</h2>
+                    <p class="slide-text" style="margin-bottom: 30px;">
+                        سيوفر النظام لوحة إدارة مركزية حيث يمكن للمسؤول:
+                    </p>
+                    <div class="feature-list">
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">تفعيل/تعطيل منافذ USB عن بُعد</div>
+                            <div class="feature-desc">يسمح هذا للمسؤول بتشغيل أو إيقاف تشغيل منافذ USB على أي جهاز متصل بالشبكة.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">ترخيص الأجهزة</div>
+                            <div class="feature-desc">التحكم في أجهزة USB التي يمكن استخدامها على كل جهاز (مثل حظر أجهزة التخزين غير المصرح بها مع السماح للملحقات المصرح بها مثل لوحات المفاتيح أو الفأرات).</div>
+                        </div>
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">مراقبة استخدام الأجهزة عبر الشبكة</div>
+                            <div class="feature-desc">الحصول على معلومات فورية حول أجهزة USB المتصلة والبيانات المنقولة والأنشطة المشبوهة عبر جميع الأنظمة المتصلة.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">الاستجابات الآلية</div>
+                            <div class="feature-desc">تحديد استجابات آلية (مثل تعطيل منافذ USB أو تنبيه المسؤول) عند اكتشاف أجهزة غير مصرح بها أو سلوك غير طبيعي.</div>
+                        </div>
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">التدقيق والسجلات</div>
+                            <div class="feature-desc">الاحتفاظ بتاريخ نشاط منافذ USB ومراجعة السجلات عن بُعد لكل جهاز، والتحقق من الأنماط أو مشاكل الأمان المحتملة.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">دعم متعدد المنصات</div>
+                            <div class="feature-desc">يمكن للنظام دعم أنظمة تشغيل متعددة، بما في ذلك Windows وLinux وmacOS، لتوفير تجربة إدارة موحدة للبيئات المختلطة.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="feature-advanced-security.png" alt="Advanced Security" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(255,107,107,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                    <img src="feature-ai.png" alt="AI Feature" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(78,205,196,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Features Part 1 -->
+        <div class="slide" id="slide4">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">الميزات الرئيسية - الجزء الأول</h2>
+                    <div class="feature-list">
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">1. لوحة التحكم المركزية للتحكم عن بُعد</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> لوحة تحكم مبنية على الويب أو سطح المكتب حيث يمكن للمسؤولين عرض وإدارة جميع أنشطة USB من موقع مركزي.<br>
+                                <strong>الفائدة:</strong> بدلاً من إدارة منافذ USB لكل جهاز يدوياً، يمكن للمسؤولين إدارة ومراقبة كل شيء من واجهة واحدة.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">2. قفل/إلغاء قفل منافذ USB عن بُعد</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> القدرة على تعطيل أو تفعيل منافذ USB عن بُعد على أي جهاز داخل الشبكة.<br>
+                                <strong>الفائدة:</strong> يمنع نقل البيانات غير المصرح به أو إدخال البرامج الضارة.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">3. القوائم البيضاء والسوداء للأجهزة</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> إنشاء قوائم بيضاء أو سوداء لأجهزة USB حسب نوع الجهاز أو الصانع.<br>
+                                <strong>الفائدة:</strong> يحسن الأمان بالسماح فقط للأجهزة الموثوقة بالتفاعل مع النظام.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">4. التنبيهات والإشعارات الفورية</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> إعداد تنبيهات لإخطار المسؤولين إذا تم توصيل جهاز USB غير مصرح به.<br>
+                                <strong>الفائدة:</strong> يبقي المسؤولين على علم بالتهديدات المحتملة دون مراقبة يدوية.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="feature-advanced-security.png" alt="Advanced Security" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(255,107,107,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                    <img src="feature-ai.png" alt="AI Feature" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(78,205,196,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Features Part 2 -->
+        <div class="slide" id="slide5">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">الميزات الرئيسية - الجزء الثاني</h2>
+                    <div class="feature-list">
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">5. تطبيق السياسات الآلي</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> تحديد سياسات أمان مخصصة - حظر أجهزة محددة خلال ساعات معينة.<br>
+                                <strong>الفائدة:</strong> يضمن أن استخدام USB يلتزم بسياسات المؤسسة.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">6. التدقيق والتسجيل على مستوى الشبكة</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> جمع وتخزين سجلات مفصلة لكل اتصال USB وانقطاع اتصال.<br>
+                                <strong>الفائدة:</strong> يسهل التحقيقات اللاحقة للحوادث وتدقيق الامتثال.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">7. الوعي الجغرافي والسياقي</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> السماح بوصول USB فقط داخل مناطق جغرافية أو شبكات محددة.<br>
+                                <strong>الفائدة:</strong> يعزز الأمان للعاملين عن بُعد والأنظمة المحمولة.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">8. التحكم في الوصول القائم على الأدوار (RBAC)</div>
+                            <div class="feature-desc">
+                                <strong>الميزة:</strong> مستويات متفاوتة من التحكم في منافذ USB للمستخدمين المختلفين.<br>
+                                <strong>الفائدة:</strong> يمنع التلاعب غير المصرح به في إعدادات USB.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="benefit-reports.png" alt="Reports Benefits" class="slide-image" style="width: 200px; height: 200px; border-radius: 15px; box-shadow: 0 10px 25px rgba(69,183,209,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 15px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Enhanced Features -->
+        <div class="slide" id="slide6">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">الميزات المحسنة الجديدة</h2>
+                    <div class="feature-list">
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">9. هندسة الخادم المركزي مع خوادم متعددة</div>
+                            <div class="feature-desc">جميع الخوادم المدارة تتصل بخادم إدارة مركزي ينسق مراقبة والتحكم في USB عبر الشبكة مع تسجيل تلقائي.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">10. مراقبة استهلاك الطاقة لمنافذ USB</div>
+                            <div class="feature-desc">مراقبة استخدام الطاقة لكل منفذ في الوقت الفعلي عبر جميع الخوادم مع تحليلات وتحسين تلقائي.</div>
+                        </div>
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">11. الخادم المركزي الاحتياطي (التوفر العالي)</div>
+                            <div class="feature-desc">خادم مركزي احتياطي ثانوي يتولى المسؤولية إذا فشل الأساسي مع تحويل تلقائي ومزامنة فورية.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">12. اكتشاف وتحليل الهجمات الإلكترونية المتقدم</div>
+                            <div class="feature-desc">يراقب جميع منافذ الشبكة، ويكتشف التهديدات في الوقت الفعلي مع تحليل وتصنيف مفصل.</div>
+                        </div>
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">13. إدارة المنافذ الذكية أثناء الهجمات</div>
+                            <div class="feature-desc">يعزل فقط المنافذ المهاجمة، مع الحفاظ على تشغيل الأخرى وإعادة توجيه الحركة المشروعة.</div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">14. نظام معلومات الهجمات الشامل</div>
+                            <div class="feature-desc">يوفر طب شرعي كامل للهجوم - الجدول الزمني، والطرق، والثغرات، وتحليل المهاجم، وتقييم الأثر.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="usb_monitor_logo.png" alt="USB Monitor Logo" class="slide-image" style="width: 200px; height: 200px; border-radius: 15px; box-shadow: 0 10px 25px rgba(255,107,107,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 15px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Server Architecture -->
+        <div class="slide" id="slide7">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">هندسة اتصال الخوادم</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1000px;">
+                        <div class="feature-item slide-in-left">
+                            <div class="feature-title">بروتوكول اتصال الخادم المركزي</div>
+                            <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                                1. المصافحة الأولية: مصافحة TLS 1.3 لكل خادم<br>
+                                2. المصادقة: مصادقة الشهادة + مفتاح API<br>
+                                3. التسجيل: تسجيل قدرات وحالة الخادم<br>
+                                4. النبضة: فحوصات الصحة المستمرة<br>
+                                5. مزامنة البيانات: مزامنة فورية للسياسات والسجلات
+                            </div>
+                        </div>
+                        <div class="feature-item slide-in-right">
+                            <div class="feature-title">تنفيذ الخادم الاحتياطي</div>
+                            <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                                1. تكوين الخادم الرئيسي والاحتياطي: الخادم الأساسي كرئيسي، الخادم الاحتياطي كنسخة احتياطية<br>
+                                2. النسخ الفوري: البيانات منعكسة على الخادم الاحتياطي<br>
+                                3. التحويل التلقائي: الخادم الاحتياطي ينشط عند فشل الرئيسي<br>
+                                4. توزيع الحمولة: يوزع الحركة في العمليات العادية<br>
+                                5. إجراءات الاستعادة: الاستعادة التلقائية للخادم الرئيسي عندما يكون سليماً
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="alpha-team-logo.png" alt="Alpha Team Logo" class="slide-image image-transition" style="width: 150px; height: 150px; border-radius: 20px; box-shadow: 0 15px 40px rgba(78,205,196,0.4);">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Security Guidelines -->
+        <div class="slide" id="slide8">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">قواعد وإرشادات الأمان</h2>
+                    <div class="feature-list">
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">🔒 أمان الشبكة</div>
+                            <div class="feature-desc">
+                                تشفير TLS 1.3 لجميع الحركة، مصادقة قائمة على الشهادات، تقسيم الشبكة للإدارة، قواعد الجدار الناري لكل منفذ، VPN للإدارة عن بُعد.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">👤 التحكم في الوصول</div>
+                            <div class="feature-desc">
+                                مصادقة متعددة العوامل (MFA)، RBAC للحد الأدنى من الامتيازات، انتهاء الجلسات والخروج التلقائي، تسجيل تدقيق لجميع إجراءات المسؤول، مراجعات الوصول الدورية.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">🛡️ حماية البيانات</div>
+                            <div class="feature-desc">
+                                التشفير أثناء الراحة لجميع البيانات الحساسة، إدارة المفاتيح الآمنة والتدوير، إجراءات النسخ الاحتياطي واستعادة الكوارث، سياسات الاحتفاظ بالبيانات والتخلص الآمن، حماية خصوصية بيانات المستخدم.
+                            </div>
+                        </div>
+                        <div class="feature-item scale-in">
+                            <div class="feature-title">⚡ الاستجابة للحوادث</div>
+                            <div class="feature-desc">
+                                الاكتشاف والتنبيه الآلي، سير عمل التصعيد حسب مستوى التهديد، جمع وحفظ البيانات الطب شرعية، بروتوكولات التواصل للحوادث، التحليل والتحسين اللاحق للحوادث.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="benefit-security.png" alt="Security Benefits" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(255,107,107,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                    <img src="feature-blockchain.png" alt="Blockchain Security" class="slide-image" style="width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 25px rgba(69,183,209,0.3); object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Configuration Files -->
+        <div class="slide" id="slide9">
+            <div class="slide-content">
+                <h2 class="slide-subtitle">ملفات تكوين الخادم</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1200px;">
+                    <div class="feature-item slide-in-left">
+                        <div class="feature-title">تكوين الخادم الرئيسي</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em; line-height: 1.8;">
+                            يحتوي على معرف الخادم، وتفاصيل اتصال المركزي/الاحتياطي، وفترات النبضة، والمهلات الزمنية، وسياسات إعادة المحاولة، ومستويات التسجيل، ومسارات الملفات، ومواقع الشهادات/المفاتيح، وشهادات CA، وإعدادات التشفير، وفترات تدوير المفاتيح. أوراق اعتماد قاعدة البيانات، وأحجام المجموعات، والمهلات الزمنية. حدود المراقبة وأنماط الاستجابة.
+                        </div>
+                    </div>
+                    <div class="feature-item slide-in-right">
+                        <div class="feature-title">تكوين وكيل العميل</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em; line-height: 1.8;">
+                            يشمل معرف العميل، ونقطة نهاية الخادم المركزي، وفترة التسجيل، وتكرار تقرير الحالة، وفترة فحص الجهاز، وإعدادات مراقبة USB (الاكتشاف، الطاقة، النقل)، وقوائم الأجهزة المحظورة/المسموحة، والحدود القصوى للأجهزة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Open Source References -->
+        <div class="slide" id="slide10">
+            <div class="slide-content">
+                <h2 class="slide-subtitle">أمثلة مشاريع المصدر المفتوح للمرجع</h2>
+                <div class="feature-list">
+                    <div class="feature-item slide-in-left">
+                        <div class="feature-title">USBGuard (Linux)</div>
+                        <div class="feature-desc">التحكم الأساسي ومراقبة أجهزة USB</div>
+                    </div>
+                    <div class="feature-item slide-in-right">
+                        <div class="feature-title">OpenDLP</div>
+                        <div class="feature-desc">منع تسريب البيانات مع مراقبة USB</div>
+                    </div>
+                    <div class="feature-item slide-in-left">
+                        <div class="feature-title">NetXMS</div>
+                        <div class="feature-desc">مراقبة الشبكة القابلة للتوسيع مع دعم المكونات الإضافية</div>
+                    </div>
+                    <div class="feature-item slide-in-right">
+                        <div class="feature-title">Snort</div>
+                        <div class="feature-desc">نظام اكتشاف التسلل للتهديدات الشبكية</div>
+                    </div>
+                    <div class="feature-item slide-in-left">
+                        <div class="feature-title">Suricata</div>
+                        <div class="feature-desc">IDS/IPS شبكي عالي الأداء</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: User Roles and Hierarchy -->
+        <div class="slide" id="slide11">
+            <div class="slide-content">
+                <h2 class="slide-subtitle">هيكل المستخدمين والأدوار</h2>
+                <div class="feature-list">
+                    <div class="feature-item scale-in">
+                        <div class="feature-title">كيان المستخدم</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                            معرف المستخدم، اسم المستخدم، البريد الإلكتروني، كلمة المرور، معرف الدور، معرف المؤسسة، معرف الترخيص، الحالة، آخر تسجيل دخول، MFA مفعل
+                        </div>
+                    </div>
+                    <div class="feature-item scale-in">
+                        <div class="feature-title">الأدوار والأذونات</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                            معرف الدور، اسم الدور، الأذونات المرتبطة، معرف الإذن، اسم الإذن، الوصف التفصيلي
+                        </div>
+                    </div>
+                    <div class="feature-item scale-in">
+                        <div class="feature-title">عملية تسجيل الدخول</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                            معرف تسجيل الدخول، معرف المستخدم، الطابع الزمني، عنوان IP، تفاصيل الجهاز، الرمز المميز
+                        </div>
+                    </div>
+                    <div class="feature-item scale-in">
+                        <div class="feature-title">سجلات النشاط</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                            معرف السجل، معرف المستخدم، الطابع الزمني، الإجراء، الجهاز/المنفذ المستهدف، النتيجة
+                        </div>
+                    </div>
+                    <div class="feature-item scale-in">
+                        <div class="feature-title">التسلسل الهرمي للأدوار</div>
+                        <div class="feature-desc" style="text-align: right; font-size: 0.9em;">
+                            المسؤول: الوصول الكامل - إدارة المستخدمين، النظام، السجلات، منافذ USB<br>
+                            المدير: معتدل - عرض السجلات، تطبيق السياسات، التحكم في المنافذ<br>
+                            المشاهد: للقراءة فقط - عرض البيانات والسجلات
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Conclusion -->
+        <div class="slide" id="slide12">
+            <div class="slide-content split-layout">
+                <div class="slide-text-section">
+                    <h2 class="slide-subtitle">الخلاصة والتوصيات</h2>
+                    <div class="feature-item scale-in" style="max-width: 800px;">
+                        <div class="feature-desc" style="font-size: 1.3em; text-align: center;">
+                            هذه المواصفات الشاملة توفر مراقبة والتحكم عن بُعد في USB على مستوى المؤسسات مع أمان إلكتروني متقدم، وتوفر عالي، وقابلية توسع - جاهزة بالكامل للنشر على البنية التحتية المختارة.
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-image-section">
+                    <img src="hasan-profile.jpg" alt="Developer Profile" class="slide-image image-bounce" style="width: 150px; height: 150px; border-radius: 50%; border: 5px solid rgba(255,107,107,0.6); box-shadow: 0 20px 50px rgba(255,107,107,0.4);">
+                    <div style="width: 140px; height: 140px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 50px rgba(255,107,107,0.4);">
+                        <span style="font-size: 4em; color: white; filter: drop-shadow(0 0 20px rgba(255,255,255,0.5));">✅</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Presentation {
+            constructor(remoteControl) {
+                this.remoteControl = remoteControl;
+                this.currentSlide = 1;
+                this.totalSlides = 12;
+                this.slides = [];
+                this.isAnimating = false;
+                this.autoPlayInterval = null;
+                this.isAutoPlaying = false;
+
+                this.init();
+                this.createParticles();
+                this.bindEvents();
+            }
+
+            init() {
+                for (let i = 1; i <= this.totalSlides; i++) {
+                    this.slides[i] = document.getElementById(`slide${i}`);
+                }
+                this.updateUI();
+            }
+
+            createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                for (let i = 0; i < 80; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 8 + 's';
+                    particle.style.animationDuration = (Math.random() * 6 + 6) + 's';
+                    particle.style.opacity = Math.random() * 0.8 + 0.2;
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            bindEvents() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+                document.getElementById('presentationModeBtn').addEventListener('click', () => this.toggleAutoPlay());
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            this.prevSlide();
+                            break;
+                        case 'ArrowRight':
+                        case 'ArrowDown':
+                        case ' ':
+                            e.preventDefault();
+                            this.nextSlide();
+                            break;
+                        case 'Home':
+                            e.preventDefault();
+                            this.goToSlide(1);
+                            break;
+                        case 'End':
+                            e.preventDefault();
+                            this.goToSlide(this.totalSlides);
+                            break;
+                        case 'p':
+                        case 'P':
+                            e.preventDefault();
+                            this.toggleAutoPlay();
+                            break;
+                    }
+                });
+
+                // Touch navigation
+                let startX = 0;
+                let startY = 0;
+
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                });
+
+                document.addEventListener('touchend', (e) => {
+                    if (!startX || !startY) return;
+
+                    const endX = e.changedTouches[0].clientX;
+                    const endY = e.changedTouches[0].clientY;
+                    const diffX = startX - endX;
+                    const diffY = startY - endY;
+
+                    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                        if (diffX > 0) {
+                            this.nextSlide();
+                        } else {
+                            this.prevSlide();
+                        }
+                    }
+
+                    startX = 0;
+                    startY = 0;
+                });
+            }
+
+            showSlide(slideNumber) {
+                if (this.isAnimating || slideNumber < 1 || slideNumber > this.totalSlides) return;
+
+                this.isAnimating = true;
+
+                // Hide current slide
+                if (this.slides[this.currentSlide]) {
+                    this.slides[this.currentSlide].classList.remove('active');
+                    this.slides[this.currentSlide].classList.add('prev');
+                }
+
+                // Show new slide
+                setTimeout(() => {
+                    if (this.slides[this.currentSlide]) {
+                        this.slides[this.currentSlide].classList.remove('prev');
+                    }
+
+                    this.currentSlide = slideNumber;
+
+                    if (this.slides[this.currentSlide]) {
+                        this.slides[this.currentSlide].classList.remove('next');
+                        this.slides[this.currentSlide].classList.add('active');
+
+                        // Add automatic image animation
+                        setTimeout(() => {
+                            this.animateSlideImages(this.slides[this.currentSlide]);
+                        }, 200);
+                    }
+
+                    this.updateUI();
+
+                    setTimeout(() => {
+                        this.isAnimating = false;
+                    }, 800);
+                }, 400);
+            }
+
+            animateSlideImages(slide) {
+                const images = slide.querySelectorAll('.slide-image');
+                images.forEach((img, index) => {
+                    // Remove existing animation classes
+                    img.classList.remove('image-bounce', 'image-rotate', 'image-transition');
+
+                    // Add animation with delay
+                    setTimeout(() => {
+                        const animations = ['image-bounce', 'image-rotate', 'image-transition'];
+                        const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+                        img.classList.add(randomAnimation);
+
+                        // Remove animation after it completes
+                        setTimeout(() => {
+                            img.classList.remove(randomAnimation);
+                        }, 2000);
+                    }, index * 300);
+                });
+            }
+
+            startAutoPlay() {
+                if (this.isAutoPlaying) return;
+
+                this.isAutoPlaying = true;
+                const btn = document.getElementById('presentationModeBtn');
+                btn.textContent = '⏸️ العرض التلقائي';
+                btn.style.background = 'linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9))';
+
+                this.autoPlayInterval = setInterval(() => {
+                    if (this.currentSlide < this.totalSlides) {
+                        this.nextSlide();
+                    } else {
+                        this.stopAutoPlay();
+                        this.goToSlide(1); // العودة للبداية
+                    }
+                }, 10000); // 10 ثواني
+
+                this.remoteControl.showNotification('تم تفعيل وضع العرض التلقائي - 10 ثواني لكل شريحة');
+            }
+
+            stopAutoPlay() {
+                if (!this.isAutoPlaying) return;
+
+                this.isAutoPlaying = false;
+                const btn = document.getElementById('presentationModeBtn');
+                btn.textContent = '▶️ وضع العرض';
+                btn.style.background = 'linear-gradient(45deg, rgba(102,126,234,0.9), rgba(118,75,162,0.9))';
+
+                if (this.autoPlayInterval) {
+                    clearInterval(this.autoPlayInterval);
+                    this.autoPlayInterval = null;
+                }
+
+                this.remoteControl.showNotification('تم إيقاف وضع العرض التلقائي');
+            }
+
+            toggleAutoPlay() {
+                if (this.isAutoPlaying) {
+                    this.stopAutoPlay();
+                } else {
+                    this.startAutoPlay();
+                }
+            }
+
+            nextSlide() {
+                this.stopAutoPlay(); // إيقاف العرض التلقائي عند التفاعل اليدوي
+                if (this.currentSlide < this.totalSlides) {
+                    this.showSlide(this.currentSlide + 1);
+                }
+            }
+
+            prevSlide() {
+                this.stopAutoPlay(); // إيقاف العرض التلقائي عند التفاعل اليدوي
+                if (this.currentSlide > 1) {
+                    this.showSlide(this.currentSlide - 1);
+                }
+            }
+
+            goToSlide(slideNumber) {
+                this.stopAutoPlay(); // إيقاف العرض التلقائي عند التفاعل اليدوي
+                if (slideNumber !== this.currentSlide) {
+                    this.showSlide(slideNumber);
+                }
+            }
+
+            updateUI() {
+                // Update navigation buttons
+                document.getElementById('prevBtn').disabled = this.currentSlide === 1;
+                document.getElementById('nextBtn').disabled = this.currentSlide === this.totalSlides;
+
+                // Update slide counter
+                document.getElementById('slideCounter').textContent = `${this.currentSlide} / ${this.totalSlides}`;
+
+                // Update progress bar
+                const progress = ((this.currentSlide - 1) / (this.totalSlides - 1)) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // Update document title
+                const titles = [
+                    'التحكم ومراقبة منافذ USB عن بُعد',
+                    'الجدة والابتكار',
+                    'كيفية العمل',
+                    'الميزات الرئيسية - الجزء الأول',
+                    'الميزات الرئيسية - الجزء الثاني',
+                    'الميزات المحسنة الجديدة',
+                    'هندسة اتصال الخوادم',
+                    'قواعد وإرشادات الأمان',
+                    'ملفات تكوين الخادم',
+                    'أمثلة مشاريع المصدر المفتوح',
+                    'هيكل المستخدمين والأدوار',
+                    'الخلاصة والتوصيات'
+                ];
+                document.title = `${titles[this.currentSlide - 1]} - عرض تقديمي احترافي`;
+            }
+        }
+
+        // Wireless Presenter Support Class
+        class WirelessPresenter {
+            constructor(remoteControl) {
+                this.remoteControl = remoteControl;
+                this.gamepads = {};
+                this.hidDevices = [];
+                this.settings = {
+                    gamepadEnabled: true,
+                    webhidEnabled: false,
+                    autoNavigation: true,
+                    soundEnabled: false
+                };
+                this.isConnected = false;
+                this.lastButtonPress = 0;
+                this.debounceTime = 200; // ms
+            }
+
+            init() {
+                this.loadSettings();
+                this.bindEvents();
+                this.startGamepadPolling();
+                this.checkExistingDevices();
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('wirelessPresenterSettings');
+                if (saved) {
+                    this.settings = { ...this.settings, ...JSON.parse(saved) };
+                }
+                this.updateSettingsUI();
+            }
+
+            saveSettings() {
+                localStorage.setItem('wirelessPresenterSettings', JSON.stringify(this.settings));
+            }
+
+            bindEvents() {
+                // Settings button
+                document.getElementById('wirelessSettingsBtn').addEventListener('click', () => {
+                    this.toggleSettings();
+                });
+
+                // Settings toggles
+                document.getElementById('gamepadToggle').addEventListener('click', () => {
+                    this.toggleSetting('gamepadEnabled');
+                });
+
+                document.getElementById('webhidToggle').addEventListener('click', () => {
+                    this.toggleSetting('webhidEnabled');
+                });
+
+                document.getElementById('autoNavToggle').addEventListener('click', () => {
+                    this.toggleSetting('autoNavigation');
+                });
+
+                document.getElementById('soundToggle').addEventListener('click', () => {
+                    this.toggleSetting('soundEnabled');
+                });
+
+                // Manual connect button
+                document.getElementById('connectWirelessBtn').addEventListener('click', () => {
+                    this.manualConnect();
+                });
+
+                // Enhanced keyboard support for wireless presenters
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeyPress(e);
+                });
+
+                // Gamepad events
+                window.addEventListener('gamepadconnected', (e) => {
+                    this.onGamepadConnected(e.gamepad);
+                });
+
+                window.addEventListener('gamepaddisconnected', (e) => {
+                    this.onGamepadDisconnected(e.gamepad);
+                });
+            }
+
+            toggleSettings() {
+                const settings = document.getElementById('wirelessSettings');
+                settings.classList.toggle('show');
+            }
+
+            toggleSetting(setting) {
+                this.settings[setting] = !this.settings[setting];
+                this.saveSettings();
+                this.updateSettingsUI();
+
+                if (setting === 'gamepadEnabled') {
+                    if (this.settings.gamepadEnabled) {
+                        this.startGamepadPolling();
+                    } else {
+                        this.stopGamepadPolling();
+                    }
+                } else if (setting === 'webhidEnabled') {
+                    if (this.settings.webhidEnabled) {
+                        this.requestHIDPermission();
+                    }
+                }
+            }
+
+            updateSettingsUI() {
+                document.getElementById('gamepadToggle').classList.toggle('active', this.settings.gamepadEnabled);
+                document.getElementById('webhidToggle').classList.toggle('active', this.settings.webhidEnabled);
+                document.getElementById('autoNavToggle').classList.toggle('active', this.settings.autoNavigation);
+                document.getElementById('soundToggle').classList.toggle('active', this.settings.soundEnabled);
+            }
+
+            handleKeyPress(e) {
+                // Enhanced keyboard support for wireless presenters
+                const now = Date.now();
+                if (now - this.lastButtonPress < this.debounceTime) return;
+
+                let action = null;
+
+                switch(e.key) {
+                    case 'PageUp':
+                        e.preventDefault();
+                        action = 'prev';
+                        break;
+                    case 'PageDown':
+                        e.preventDefault();
+                        action = 'next';
+                        break;
+                    case 'F5':
+                        e.preventDefault();
+                        action = 'start';
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        action = 'exit';
+                        break;
+                    case 'End':
+                        e.preventDefault();
+                        action = 'end';
+                        break;
+                    case 'Home':
+                        e.preventDefault();
+                        action = 'home';
+                        break;
+                }
+
+                if (action) {
+                    this.lastButtonPress = now;
+                    this.executeAction(action);
+                    this.playSound(action);
+                }
+            }
+
+            executeAction(action) {
+                switch(action) {
+                    case 'next':
+                        presentation.nextSlide();
+                        this.showNavigationIndicator('next');
+                        break;
+                    case 'prev':
+                        presentation.prevSlide();
+                        this.showNavigationIndicator('prev');
+                        break;
+                    case 'start':
+                        presentation.goToSlide(1);
+                        this.showNotification('بدء العرض التقديمي');
+                        break;
+                    case 'exit':
+                        if (this.remoteControl.isFullscreen) {
+                            this.remoteControl.exitFullscreen();
+                        }
+                        this.showNotification('خروج من العرض');
+                        break;
+                    case 'home':
+                        presentation.goToSlide(1);
+                        this.showNavigationIndicator('home');
+                        break;
+                    case 'end':
+                        presentation.goToSlide(presentation.totalSlides);
+                        this.showNavigationIndicator('end');
+                        break;
+                }
+            }
+
+            startGamepadPolling() {
+                if (!this.settings.gamepadEnabled) return;
+
+                this.gamepadInterval = setInterval(() => {
+                    const gamepads = navigator.getGamepads();
+                    for (let i = 0; i < gamepads.length; i++) {
+                        const gamepad = gamepads[i];
+                        if (gamepad) {
+                            this.handleGamepadInput(gamepad);
+                        }
+                    }
+                }, 100);
+            }
+
+            stopGamepadPolling() {
+                if (this.gamepadInterval) {
+                    clearInterval(this.gamepadInterval);
+                    this.gamepadInterval = null;
+                }
+            }
+
+            onGamepadConnected(gamepad) {
+                if (!this.settings.gamepadEnabled) return;
+
+                this.gamepads[gamepad.index] = gamepad;
+                this.isConnected = true;
+                this.updateConnectionStatus(true);
+                this.showNotification(`🎮 ريموت ألعاب متصل: ${gamepad.id}`);
+                console.log('Gamepad connected:', gamepad.id);
+            }
+
+            onGamepadDisconnected(gamepad) {
+                delete this.gamepads[gamepad.index];
+                if (Object.keys(this.gamepads).length === 0) {
+                    this.isConnected = false;
+                    this.updateConnectionStatus(false);
+                    this.showNotification('🎮 ريموت الألعاب مفصول');
+                }
+                console.log('Gamepad disconnected:', gamepad.id);
+            }
+
+            handleGamepadInput(gamepad) {
+                const now = Date.now();
+                if (now - this.lastButtonPress < this.debounceTime) return;
+
+                // Common gamepad button mappings for wireless presenters
+                const buttons = gamepad.buttons;
+
+                // Button 0: A/Cross - Next slide
+                if (buttons[0] && buttons[0].pressed) {
+                    this.lastButtonPress = now;
+                    this.executeAction('next');
+                    return;
+                }
+
+                // Button 1: B/Circle - Previous slide
+                if (buttons[1] && buttons[1].pressed) {
+                    this.lastButtonPress = now;
+                    this.executeAction('prev');
+                    return;
+                }
+
+                // Button 2: X/Square - Start presentation
+                if (buttons[2] && buttons[2].pressed) {
+                    this.lastButtonPress = now;
+                    this.executeAction('start');
+                    return;
+                }
+
+                // Button 3: Y/Triangle - Toggle fullscreen
+                if (buttons[3] && buttons[3].pressed) {
+                    this.lastButtonPress = now;
+                    this.remoteControl.toggleFullscreen();
+                    return;
+                }
+
+                // D-pad handling
+                const axes = gamepad.axes;
+                if (axes[1] < -0.5) { // Up
+                    this.lastButtonPress = now;
+                    this.executeAction('prev');
+                } else if (axes[1] > 0.5) { // Down
+                    this.lastButtonPress = now;
+                    this.executeAction('next');
+                }
+
+                if (axes[0] < -0.5) { // Left
+                    this.lastButtonPress = now;
+                    this.executeAction('home');
+                } else if (axes[0] > 0.5) { // Right
+                    this.lastButtonPress = now;
+                    this.executeAction('end');
+                }
+            }
+
+            async requestHIDPermission() {
+                if (!this.settings.webhidEnabled || !navigator.hid) return;
+
+                try {
+                    this.hidDevices = await navigator.hid.requestDevice({
+                        filters: [
+                            // Common wireless presenter VID/PID combinations
+                            { vendorId: 0x046d, productId: 0xc52b }, // Logitech R400
+                            { vendorId: 0x046d, productId: 0xc53a }, // Logitech Spotlight
+                            { vendorId: 0x04b4, productId: 0x0101 }, // Kensington
+                            // Generic HID devices
+                            { usagePage: 0x000C, usage: 0x0001 } // Consumer Control
+                        ]
+                    });
+
+                    if (this.hidDevices.length > 0) {
+                        this.isConnected = true;
+                        this.updateConnectionStatus(true);
+                        this.showNotification(`📡 جهاز HID متصل: ${this.hidDevices[0].productName || 'جهاز غير معروف'}`);
+
+                        // Open devices and listen for input
+                        for (const device of this.hidDevices) {
+                            await device.open();
+                            device.addEventListener('inputreport', (e) => {
+                                this.handleHIDInput(e);
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.log('HID device request failed:', error);
+                    this.showNotification('فشل في الاتصال بجهاز HID');
+                }
+            }
+
+            handleHIDInput(event) {
+                const now = Date.now();
+                if (now - this.lastButtonPress < this.debounceTime) return;
+
+                const { data } = event;
+                const button = data.getUint8(0);
+
+                // Common HID presenter button mappings
+                switch(button) {
+                    case 0x01: // Previous
+                        this.lastButtonPress = now;
+                        this.executeAction('prev');
+                        break;
+                    case 0x02: // Next
+                        this.lastButtonPress = now;
+                        this.executeAction('next');
+                        break;
+                    case 0x04: // Start/Play
+                        this.lastButtonPress = now;
+                        this.executeAction('start');
+                        break;
+                    case 0x08: // Blank screen (we'll use for fullscreen toggle)
+                        this.lastButtonPress = now;
+                        this.remoteControl.toggleFullscreen();
+                        break;
+                }
+            }
+
+            manualConnect() {
+                if (this.settings.webhidEnabled) {
+                    this.requestHIDPermission();
+                } else {
+                    this.showNotification('يرجى تفعيل WebHID أولاً في الإعدادات');
+                }
+            }
+
+            checkExistingDevices() {
+                // Check for already connected gamepads
+                const gamepads = navigator.getGamepads();
+                for (let i = 0; i < gamepads.length; i++) {
+                    if (gamepads[i]) {
+                        this.onGamepadConnected(gamepads[i]);
+                    }
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const statusEl = document.getElementById('wirelessStatus');
+                if (connected) {
+                    statusEl.classList.add('connected');
+                } else {
+                    statusEl.classList.remove('connected');
+                }
+            }
+
+            showNavigationIndicator(direction) {
+                if (!this.settings.autoNavigation) return;
+
+                // Create visual indicator
+                const indicator = document.createElement('div');
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    ${direction === 'next' ? 'right: 50px;' : 'left: 50px;'}
+                    transform: translateY(-50%);
+                    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 50%;
+                    font-size: 2em;
+                    z-index: 2000;
+                    animation: slideInOut 0.8s ease-out;
+                    box-shadow: 0 10px 30px rgba(255,107,107,0.5);
+                `;
+
+                const icons = {
+                    next: '▶️',
+                    prev: '◀️',
+                    home: '🏠',
+                    end: '🏁'
+                };
+
+                indicator.textContent = icons[direction] || '➡️';
+                document.body.appendChild(indicator);
+
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        document.body.removeChild(indicator);
+                    }
+                }, 800);
+            }
+
+            playSound(action) {
+                if (!this.settings.soundEnabled) return;
+
+                // Create audio context for sound feedback
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Different frequencies for different actions
+                    const frequencies = {
+                        next: 800,
+                        prev: 600,
+                        start: 1000,
+                        exit: 400
+                    };
+
+                    oscillator.frequency.setValueAtTime(frequencies[action] || 500, audioContext.currentTime);
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                } catch (error) {
+                    console.log('Audio playback failed:', error);
+                }
+            }
+
+            showNotification(message) {
+                // Use the existing notification system from RemoteControl
+                this.remoteControl.showNotification(message);
+            }
+        }
+
+        // Remote control functionality
+        class RemoteControl {
+            constructor() {
+                this.isFullscreen = false;
+                this.presentationMode = false;
+                this.wirelessPresenter = new WirelessPresenter(this);
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.wirelessPresenter.init();
+            }
+
+            bindEvents() {
+                // Fullscreen button
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    this.toggleFullscreen();
+                });
+
+                // Presentation mode button
+                document.getElementById('presentationModeBtn').addEventListener('click', () => {
+                    this.togglePresentationMode();
+                });
+
+                // Image interactions
+                document.querySelectorAll('.slide-image').forEach(img => {
+                    img.addEventListener('click', () => {
+                        this.imageClickEffect(img);
+                    });
+                });
+
+                // Keyboard shortcuts for remote control
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key.toLowerCase()) {
+                        case 'f':
+                        case 'f11':
+                            e.preventDefault();
+                            this.toggleFullscreen();
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            this.togglePresentationMode();
+                            break;
+                        case 'escape':
+                            if (this.isFullscreen) {
+                                this.exitFullscreen();
+                            }
+                            break;
+                    }
+                });
+
+                // Touch gestures for mobile remote control
+                this.initTouchGestures();
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => {
+                        this.isFullscreen = true;
+                        this.showNotification('تم تفعيل وضع الشاشة الكاملة');
+                    }).catch(err => {
+                        console.log('Error attempting to enable fullscreen:', err);
+                    });
+                } else {
+                    document.exitFullscreen().then(() => {
+                        this.isFullscreen = false;
+                        this.showNotification('تم إلغاء وضع الشاشة الكاملة');
+                    });
+                }
+            }
+
+            exitFullscreen() {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                    this.isFullscreen = false;
+                }
+            }
+
+            togglePresentationMode() {
+                this.presentationMode = !this.presentationMode;
+                const btn = document.getElementById('presentationModeBtn');
+
+                if (this.presentationMode) {
+                    btn.textContent = 'وضع العرض النشط';
+                    btn.style.background = 'linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9))';
+                    this.showNotification('تم تفعيل وضع العرض التقديمي');
+                } else {
+                    btn.textContent = 'وضع العرض';
+                    btn.style.background = 'linear-gradient(45deg, rgba(102,126,234,0.9), rgba(118,75,162,0.9))';
+                    this.showNotification('تم إلغاء وضع العرض التقديمي');
+                }
+            }
+
+            imageClickEffect(img) {
+                // Add click animation
+                img.style.animation = 'none';
+                setTimeout(() => {
+                    img.style.animation = 'imageBounce 0.6s ease-out';
+                }, 10);
+
+                // Show image info
+                this.showNotification('صورة تفاعلية - انقر للتكبير');
+            }
+
+            initTouchGestures() {
+                let startX = 0;
+                let startY = 0;
+                let isSwipe = false;
+
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    isSwipe = false;
+                });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (!startX || !startY) return;
+
+                    const diffX = Math.abs(e.touches[0].clientX - startX);
+                    const diffY = Math.abs(e.touches[0].clientY - startY);
+
+                    if (diffX > 10 || diffY > 10) {
+                        isSwipe = true;
+                    }
+                });
+
+                document.addEventListener('touchend', (e) => {
+                    if (!isSwipe || !startX || !startY) return;
+
+                    const endX = e.changedTouches[0].clientX;
+                    const endY = e.changedTouches[0].clientY;
+                    const diffX = startX - endX;
+                    const diffY = startY - endY;
+
+                    // Swipe gestures for remote control
+                    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                        if (diffX > 0) {
+                            presentation.nextSlide();
+                        } else {
+                            presentation.prevSlide();
+                        }
+                    } else if (Math.abs(diffY) > 50) {
+                        if (diffY > 0) {
+                        }
+                    }
+
+                    startX = 0;
+                    startY = 0;
+                    isSwipe = false;
+                });
+            }
+
+            showNotification(message) {
+                // Remove existing notification
+                const existing = document.querySelector('.notification');
+                if (existing) {
+                    document.body.removeChild(existing);
+                }
+
+                // Create new notification
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: linear-gradient(45deg, rgba(255,107,107,0.9), rgba(78,205,196,0.9));
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    box-shadow: 0 10px 30px rgba(255,107,107,0.4);
+                    z-index: 4000;
+                    animation: slideUp 0.5s ease-out;
+                `;
+
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideDown 0.5s ease-in';
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                document.body.removeChild(notification);
+                            }
+                        }, 500);
+                    }
+                }, 3000);
+            }
+        }
+
+        // Initialize remote control and wireless presenter
+        const remoteControl = new RemoteControl();
+        const wirelessPresenter = new WirelessPresenter(remoteControl);
+
+        // Initialize wireless presenter after remote control
+        wirelessPresenter.init();
+
+        // Initialize presentation
+        const presentation = new Presentation(remoteControl);
+
+        // Add notification animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInOut {
+                0% { transform: translateY(-50%) scale(0); opacity: 0; }
+                20% { transform: translateY(-50%) scale(1.2); opacity: 1; }
+                80% { transform: translateY(-50%) scale(1); opacity: 1; }
+                100% { transform: translateY(-50%) scale(0); opacity: 0; }
+            }
+
+            /* Wireless Presenter Styles */
+            #wirelessStatus {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: #ff6b6b;
+                border: 2px solid white;
+                z-index: 1000;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 10px rgba(255,107,107,0.3);
+            }
+
+            #wirelessStatus.connected {
+                background: #4ecdc4;
+                box-shadow: 0 2px 10px rgba(78,205,196,0.5);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+
+            #wirelessSettingsBtn {
+                position: fixed;
+                top: 20px;
+                right: 60px;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                border: none;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                z-index: 1000;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+            }
+
+            #wirelessSettingsBtn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(102,126,234,0.6);
+            }
+
+            #wirelessSettings {
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: rgba(255,255,255,0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 15px;
+                padding: 20px;
+                min-width: 300px;
+                z-index: 1001;
+                transform: translateY(-20px) scale(0.9);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+            }
+
+            #wirelessSettings.show {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .setting-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 0;
+                border-bottom: 1px solid rgba(0,0,0,0.1);
+            }
+
+            .setting-item:last-child {
+                border-bottom: none;
+            }
+
+            .setting-label {
+                font-weight: 500;
+                color: #333;
+            }
+
+            .setting-toggle {
+                width: 50px;
+                height: 26px;
+                border-radius: 13px;
+                background: #ddd;
+                position: relative;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .setting-toggle.active {
+                background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            }
+
+            .setting-toggle::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: white;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+
+            .setting-toggle.active::after {
+                left: 26px;
+            }
+
+            #connectWirelessBtn {
+                width: 100%;
+                padding: 12px;
+                margin-top: 15px;
+                background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+                border: none;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            #connectWirelessBtn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

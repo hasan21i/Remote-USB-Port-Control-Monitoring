@@ -1,0 +1,266 @@
+/*==================================================================================
+  utilities.css — أنماط مساعدة عامة (Margins, Padding, Display, Text, Borders, etc.)
+==================================================================================*/
+
+/*-------------------------------------
+  1) متغيرات Global Variables
+-------------------------------------*/
+:root {
+  /* Spacing Scale */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 3rem;
+
+  /* Font Sizes */
+  --fs-xs:  0.75rem;
+  --fs-sm:  0.875rem;
+  --fs-md:  1rem;
+  --fs-lg:  1.25rem;
+  --fs-xl:  1.5rem;
+  --fs-xxl: 2rem;
+
+  /* Font Families */
+  --font-sans: 'Tajawal', system-ui, sans-serif;
+  --font-mono: 'Courier New', monospace;
+
+  /* Colors — Light */
+  --c-primary:   #1E88E5;
+  --c-primary-2: #64B5F6;
+  --c-secondary: #00BCD4;
+  --c-success:   #4CAF50;
+  --c-warning:   #FF9800;
+  --c-danger:    #F44336;
+  --c-info:      #2196F3;
+
+  --c-light:   #F5F7FA;
+  --c-mid:     #e0e0e0;
+  --c-gray:    #546E7A;
+  --c-dark:    #29434E;
+  --c-black:   #1A2027;
+  --c-white:   #ffffff;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 20px rgba(0,0,0,0.15);
+
+  /* Transitions */
+  --transition-fast:   0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow:   0.5s ease-in-out;
+}
+
+/*-------------------------------------
+  2) Dark theme overrides
+-------------------------------------*/
+[data-theme="dark"] {
+  --c-light:   #132F4C;
+  --c-mid:     #1E3A5F;
+  --c-gray:    #6B7280;
+  --c-dark:    #FAFAFA;
+  --c-black:   #ffffff;
+
+  /* Accent colors slightly adjusted for dark */
+  --c-primary:   #64B5F6;
+  --c-secondary: #4DD0E1;
+  --c-success:   #4CAF50;
+  --c-warning:   #FF9800;
+  --c-danger:    #F44336;
+  --c-info:      #2196F3;
+}
+
+/*-------------------------------------
+  3) Margin Helpers
+-------------------------------------*/
+.m-0  { margin: var(--space-0); }
+.m-1  { margin: var(--space-1); }
+.m-2  { margin: var(--space-2); }
+.m-3  { margin: var(--space-3); }
+.m-4  { margin: var(--space-4); }
+.m-5  { margin: var(--space-5); }
+
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); }
+
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); }
+
+.ms-1 { margin-inline-start: var(--space-1); }
+.ms-2 { margin-inline-start: var(--space-2); }
+.me-1 { margin-inline-end: var(--space-1); }
+.me-2 { margin-inline-end: var(--space-2); }
+
+.mx-1 { margin-left: var(--space-1); margin-right: var(--space-1); }
+.mx-2 { margin-left: var(--space-2); margin-right: var(--space-2); }
+.my-1 { margin-top: var(--space-1); margin-bottom: var(--space-1); }
+.my-2 { margin-top: var(--space-2); margin-bottom: var(--space-2); }
+
+/*-------------------------------------
+  4) Padding Helpers
+-------------------------------------*/
+.p-0  { padding: var(--space-0); }
+.p-1  { padding: var(--space-1); }
+.p-2  { padding: var(--space-2); }
+.p-3  { padding: var(--space-3); }
+.p-4  { padding: var(--space-4); }
+.p-5  { padding: var(--space-5); }
+
+.pt-1 { padding-top: var(--space-1); }
+.pb-1 { padding-bottom: var(--space-1); }
+.ps-1 { padding-inline-start: var(--space-1); }
+.pe-1 { padding-inline-end: var(--space-1); }
+
+.py-2 { padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.px-2 { padding-left: var(--space-2); padding-right: var(--space-2); }
+
+/*-------------------------------------
+  5) Display & Flex Helpers
+-------------------------------------*/
+.d-none         { display: none !important; }
+.d-block        { display: block; }
+.d-inline       { display: inline; }
+.d-inline-block { display: inline-block; }
+.d-flex         { display: flex; }
+.d-inline-flex  { display: inline-flex; }
+
+.flex-row       { flex-direction: row; }
+.flex-column    { flex-direction: column; }
+.flex-wrap      { flex-wrap: wrap; }
+.flex-nowrap    { flex-wrap: nowrap; }
+
+.justify-start   { justify-content: flex-start; }
+.justify-center  { justify-content: center; }
+.justify-end     { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+
+.align-start   { align-items: flex-start; }
+.align-center  { align-items: center; }
+.align-end     { align-items: flex-end; }
+
+/*-------------------------------------
+  6) Width & Height Helpers
+-------------------------------------*/
+.w-100  { width: 100%; }
+.w-75   { width: 75%; }
+.w-50   { width: 50%; }
+.w-25   { width: 25%; }
+.w-auto { width: auto; }
+
+.h-100  { height: 100%; }
+.h-auto { height: auto; }
+
+/*-------------------------------------
+  7) Text & Typography
+-------------------------------------*/
+.text-xs      { font-size: var(--fs-xs); }
+.text-sm      { font-size: var(--fs-sm); }
+.text-md      { font-size: var(--fs-md); }
+.text-lg      { font-size: var(--fs-lg); }
+.text-xl      { font-size: var(--fs-xl); }
+.text-xxl     { font-size: var(--fs-xxl); }
+
+.text-left    { text-align: left; }
+.text-center  { text-align: center; }
+.text-right   { text-align: right; }
+.text-justify { text-align: justify; }
+
+.text-primary   { color: var(--c-primary); }
+.text-secondary { color: var(--c-secondary); }
+.text-success   { color: var(--c-success); }
+.text-warning   { color: var(--c-warning); }
+.text-danger    { color: var(--c-danger); }
+.text-info      { color: var(--c-info); }
+.text-light     { color: var(--c-light); }
+.text-dark      { color: var(--c-dark); }
+.text-muted     { color: var(--c-gray); }
+
+/*-------------------------------------
+  8) Background & Borders
+-------------------------------------*/
+.bg-primary   { background-color: var(--c-primary); }
+.bg-secondary { background-color: var(--c-secondary); }
+.bg-success   { background-color: var(--c-success); }
+.bg-warning   { background-color: var(--c-warning); }
+.bg-danger    { background-color: var(--c-danger); }
+.bg-info      { background-color: var(--c-info); }
+.bg-light     { background-color: var(--c-light); }
+.bg-dark      { background-color: var(--c-dark); }
+.bg-white     { background-color: var(--c-white); }
+
+.border       { border: 1px solid var(--c-gray); }
+.border-0     { border: none !important; }
+.rounded-sm   { border-radius: 0.125rem; }
+.rounded-md   { border-radius: 0.25rem; }
+.rounded-lg   { border-radius: 0.5rem; }
+.rounded-pill { border-radius: 50rem; }
+.rounded      { border-radius: var(--space-1); }
+
+/*-------------------------------------
+  9) Visibility & Position
+-------------------------------------*/
+.visible          { visibility: visible; }
+.invisible        { visibility: hidden; }
+.position-relative { position: relative; }
+.position-absolute { position: absolute; }
+.position-fixed    { position: fixed; }
+
+.top-0     { top: 0; }
+.bottom-0  { bottom: 0; }
+.start-0   { inset-inline-start: 0; }
+.end-0     { inset-inline-end: 0; }
+
+/*-------------------------------------
+ 10) Cursor & User Interaction
+-------------------------------------*/
+.cursor-pointer     { cursor: pointer; }
+.cursor-not-allowed { cursor: not-allowed; }
+
+.user-select-none { 
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none; 
+}
+.user-select-text { 
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text; 
+}
+
+/* Focus outline for keyboard navigation */
+:focus {
+  outline: 3px solid var(--c-info);
+  outline-offset: 2px;
+}
+
+/*-------------------------------------
+ 11) Spinner (Loading)
+-------------------------------------*/
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 0.25rem solid rgba(0,0,0,0.1);
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/*-------------------------------------
+ 12) RTL/LTR Support
+-------------------------------------*/
+.rtl { direction: rtl; text-align: right; }
+.ltr { direction: ltr; text-align: left; }

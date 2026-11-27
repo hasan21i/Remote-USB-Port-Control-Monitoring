@@ -1,0 +1,69 @@
+# إعدادات عميل الوكيل لنظام مراقبة USB - الإعدادات الحقيقية
+agent_id: "agent-001"
+server_url: "http://192.168.56.1:5000"  # عنوان السيرفر المركزي
+api_key: "SECURE_API_KEY_2024"  # مفتاح API آمن
+heartbeat_interval: 30            # بالثواني
+registration_interval: 3600       # بالثواني
+status_report_interval: 300       # بالثواني
+device_scan_interval: 10          # بالثواني
+enable_device_detection: true
+enable_power_monitoring: true
+enable_transfer_monitoring: true
+allowed_device_types:
+  - storage
+  - keyboard
+  - mouse
+  - printer
+  - scanner
+blocked_device_types:
+  - unknown
+  - network
+  - audio
+usb_monitoring:
+  detect_new_devices: true
+  monitor_power: true
+  monitor_transfers: true
+  auto_block_suspicious: true
+  alert_on_unauthorized: true
+
+# إعدادات الاتصال المحسنة
+connection:
+  timeout: 10
+  retry_attempts: 3
+  retry_delay: 5
+  ssl_verify: false  # للاختبار المحلي
+  keep_alive: true
+  connection_pool: 10
+
+# إعدادات الأمان المحسنة
+security:
+  encrypt_data: true
+  compression: true
+  validate_certificates: false  # للاختبار المحلي
+  api_key_rotation: true
+  session_timeout: 3600
+
+# إعدادات التخزين المؤقت المحسنة
+cache:
+  enabled: true
+  max_size: 1000
+  ttl: 3600
+  offline_storage: true
+  sync_on_reconnect: true
+
+# إعدادات التقارير المحسنة
+reporting:
+  auto_generate: true
+  send_reports: true
+  report_interval: 3600
+  real_time_alerts: true
+  email_notifications: true
+
+# إعدادات المزامنة مع السيرفر المركزي
+sync:
+  enabled: true
+  interval: 300  # كل 5 دقائق
+  batch_size: 100
+  retry_on_failure: true
+  offline_mode: true
+  data_compression: true 
