@@ -53,3 +53,14 @@ remot/ios/build/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Local review, presentation & scratch files
+RESPONSE_TO_REVIEWERS.txt
+ASUS_NumberPad_fix_instructions.md
+cleanup_devices.py
+figure3_results.*
+fix_asus_numberpad.*
+Gemini_Generated_Image_*
+presentation/
+logs/
+package-lock.json
